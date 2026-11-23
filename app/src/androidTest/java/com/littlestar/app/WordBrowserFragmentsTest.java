@@ -12,6 +12,7 @@ import com.littlestar.app.data.store.ProgressState;
 import com.littlestar.app.feature.words.ThemesActivity;
 import com.littlestar.app.feature.words.ThemesFragment;
 import com.littlestar.app.feature.words.WordListFragment;
+import com.littlestar.app.feature.words.WordSearchActivity;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +27,7 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isCompletelyDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -91,7 +93,7 @@ public class WordBrowserFragmentsTest {
     @Test
     public void menuFindsWordsAcrossThemesAndReviewsRecordedCards() throws Exception {
         setRecordedWords(false);
-        try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
+        try (ActivityScenario<ThemesActivity> ignored = ActivityScenario.launch(ThemesActivity.class)) {
             onView(withId(R.id.browserToolbar)).check(matches(isDisplayed()));
             openWordMenu();
             onView(withText(R.string.word_search_title)).check(matches(isDisplayed()));
@@ -108,24 +110,22 @@ public class WordBrowserFragmentsTest {
             searchFor("zzzz");
             onView(withText(R.string.word_search_empty)).check(matches(isDisplayed()));
             String peach = "桃 · táo · peach";
-            for (String query : new String[] {" PEACH ", "tao", "桃"}) {
+            for (String query : new String[] {" PEACH ", "tao", "　桃　"}) {
                 searchFor(query);
                 onView(withText(peach)).check(matches(isDisplayed()));
             }
             onView(withId(R.id.wordQuery)).perform(click(), replaceText("tao"));
-            onView(withText(peach)).check(matches(isDisplayed()));
+            onView(withText(peach)).check(matches(isCompletelyDisplayed()));
+            UiEvidence.capture("word_browser_search_keyboard");
             searchFor("桃");
 
-            scenario.recreate();
-            awaitContent();
-            onView(withId(R.id.wordQuery)).perform(closeSoftKeyboard()).check(matches(withText("桃")));
             UiEvidence.capture("word_browser_search");
             onView(withText(peach)).perform(click());
             assertCard("桃");
             pressBack();
             onView(withText(peach)).check(matches(isDisplayed()));
             onView(withId(R.id.wordQuery)).perform(closeSoftKeyboard());
-            onView(withId(android.R.id.button2)).perform(click());
+            onView(withContentDescription(R.string.nav_back)).perform(click());
             assertWordList("Animals");
 
             setRecordedWords(true);
@@ -134,6 +134,17 @@ public class WordBrowserFragmentsTest {
             assertCard("狗");
             pressBack();
             assertWordList("Animals");
+        }
+    }
+
+    @Test
+    public void searchRestoresQueryAndResults() throws InterruptedException {
+        try (ActivityScenario<WordSearchActivity> scenario = ActivityScenario.launch(WordSearchActivity.class)) {
+            searchFor("桃");
+            scenario.recreate();
+            awaitContent();
+            onView(withId(R.id.wordQuery)).check(matches(withText("桃")));
+            onView(withText("桃 · táo · peach")).check(matches(isDisplayed()));
         }
     }
 

@@ -44,7 +44,6 @@
     <dimen name="ls_content_max_width">480dp</dimen>
     <dimen name="ls_word_browser_max_width">960dp</dimen>
     <dimen name="ls_word_grid_two_column_width">312dp</dimen>
-    <dimen name="ls_word_search_results_height">200dp</dimen>
 
     <!-- M3 逐屏尺寸 -->
     <dimen name="ls_home_hero_height">360dp</dimen>

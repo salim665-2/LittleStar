@@ -1,5 +1,6 @@
 package com.littlestar.app.feature.words;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -31,7 +32,6 @@ import java.util.List;
 /** Hosts the themes and the selected word list in one window. */
 public final class ThemesActivity extends ChildActivity {
 
-    private static final String SEARCH_DIALOG = "wordSearch";
     private ActivityThemesBinding binding;
     private boolean openingReview;
     private final OnBackPressedCallback browserBack = new OnBackPressedCallback(true) {
@@ -123,10 +123,8 @@ public final class ThemesActivity extends ChildActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_find_word) {
-            FragmentManager fragments = getSupportFragmentManager();
-            if (!fragments.isStateSaved() && fragments.findFragmentByTag(SEARCH_DIALOG) == null) {
-                new WordSearchDialogFragment().showNow(fragments, SEARCH_DIALOG);
-            }
+            startActivity(new Intent(this, WordSearchActivity.class));
+            Motion.childEnter(this);
             return true;
         }
         if (item.getItemId() == R.id.action_review_recorded) {
