@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/action_find_word"
-        android:title="@string/word_search_title"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_review_recorded"
-        android:title="@string/word_review_recorded"
-        app:showAsAction="never" />
+    <group
+        android:id="@+id/wordBrowserActions"
+        android:visible="false">
+        <item
+            android:id="@+id/action_continue_browsing"
+            android:title="@string/wl_continue_browsing"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/action_play_theme"
+            android:title="@string/wl_play_theme"
+            app:showAsAction="never" />
+    </group>
 </menu>

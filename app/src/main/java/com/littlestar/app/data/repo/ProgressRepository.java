@@ -72,6 +72,10 @@ public final class ProgressRepository {
         return n;
     }
 
+    public void rememberBrowsedWord(@NonNull String themeId, @NonNull String wordId) {
+        store.update(state -> state.lastBrowsedWords.put(themeId, wordId));
+    }
+
     /** 点印章 / 手动学会。 */
     public void markLearned(@NonNull String wordId) {
         Instant now = clock.now();

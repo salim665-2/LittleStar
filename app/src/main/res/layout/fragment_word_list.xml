@@ -46,7 +46,23 @@
 
             <ImageView android:layout_width="@dimen/ls_icon" android:layout_height="@dimen/ls_icon" android:importantForAccessibility="no" android:src="@drawable/ic_speaker" app:tint="@color/ls_muted"/>
 
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="@dimen/ls_gap_sm" android:text="@string/wl_hint" android:textAppearance="@style/TextAppearance.Material3.BodyMedium"/>
+            <TextView
+                android:id="@+id/wordListHint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/ls_gap_sm"
+                android:text="@string/wl_hint"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stopThemeAudio"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/ls_btn_icon"
+                android:text="@string/wl_stop_audio"
+                android:visibility="gone" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

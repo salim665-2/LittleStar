@@ -1,6 +1,5 @@
 package com.littlestar.app.feature.words;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -12,28 +11,21 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.Lifecycle;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.littlestar.app.AppContainer;
 import com.littlestar.app.R;
 import com.littlestar.app.core.ui.ChildActivity;
 import com.littlestar.app.core.ui.Insets;
 import com.littlestar.app.core.ui.Motion;
-import com.littlestar.app.data.content.model.Word;
-import com.littlestar.app.data.store.ProgressState;
 import com.littlestar.app.databinding.ActivityThemesBinding;
 import com.littlestar.app.feature.flashcard.FlashcardActivity;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /** Hosts the themes and the selected word list in one window. */
 public final class ThemesActivity extends ChildActivity {
 
     private ActivityThemesBinding binding;
-    private boolean openingReview;
     private final OnBackPressedCallback browserBack = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
@@ -121,56 +113,32 @@ public final class ThemesActivity extends ChildActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_find_word) {
-            startActivity(new Intent(this, WordSearchActivity.class));
-            Motion.childEnter(this);
-            return true;
+    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
+        WordListFragment words = currentWordList();
+        boolean ready = words != null && words.hasWords();
+        menu.setGroupVisible(R.id.wordBrowserActions, ready);
+        if (ready) {
+            menu.findItem(R.id.action_continue_browsing).setTitle(words.hasBrowsingPosition()
+                    ? R.string.wl_continue_browsing : R.string.wl_start_browsing);
+            menu.findItem(R.id.action_play_theme).setEnabled(!words.isPlayingTheme());
         }
-        if (item.getItemId() == R.id.action_review_recorded) {
-            openRecordedWords();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        return super.onPrepareOptionsMenu(menu);
     }
 
-    private void openRecordedWords() {
-        if (openingReview) {
-            return;
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        WordListFragment words = currentWordList();
+        if (words != null && words.hasWords()) {
+            if (item.getItemId() == R.id.action_continue_browsing) {
+                words.continueBrowsing();
+                return true;
+            }
+            if (item.getItemId() == R.id.action_play_theme) {
+                words.playTheme();
+                return true;
+            }
         }
-        openingReview = true;
-        AppContainer app = appContainer();
-        app.store.read(state -> {
-            app.content.ensureLoaded();
-            List<Word> recorded = new ArrayList<>();
-            for (Word word : app.content.wordsInOrder()) {
-                ProgressState.WordProgress progress = state.words.get(word.id);
-                if (progress != null && progress.learnedAt != null) {
-                    recorded.add(word);
-                }
-            }
-            recorded.sort(Comparator.comparingLong(
-                    (Word word) -> state.words.get(word.id).learnedAt).reversed());
-            List<String> ids = new ArrayList<>();
-            for (Word word : recorded) {
-                ids.add(word.id);
-            }
-            return ids;
-        }, wordIds -> {
-            openingReview = false;
-            if (isFinishing() || !getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
-                return;
-            }
-            if (wordIds.isEmpty()) {
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.word_review_recorded)
-                        .setMessage(R.string.word_review_empty)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show();
-            } else {
-                openCards(wordIds, 0);
-            }
-        });
+        return super.onOptionsItemSelected(item);
     }
 
     void openCards(List<String> wordIds, int index) {
@@ -178,12 +146,19 @@ public final class ThemesActivity extends ChildActivity {
         Motion.childEnter(this);
     }
 
+    @Nullable
+    private WordListFragment currentWordList() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.wordsPane);
+        return fragment instanceof WordListFragment words ? words : null;
+    }
+
     private void updatePanes() {
-        boolean hasWords = getSupportFragmentManager().findFragmentById(R.id.wordsPane) != null;
+        boolean hasWords = currentWordList() != null;
         binding.themesPane.setVisibility(isTwoPane() || !hasWords ? View.VISIBLE : View.GONE);
         binding.wordsPane.setVisibility(hasWords ? View.VISIBLE : View.GONE);
         if (binding.chooseThemeHint != null) {
             binding.chooseThemeHint.setVisibility(hasWords ? View.GONE : View.VISIBLE);
         }
+        invalidateOptionsMenu();
     }
 }
