@@ -354,3 +354,7 @@
 ## D58 · 2026-11-23 · 主题词表续看与连播
 - `progress.json` 的可选字段 `lastBrowsedWords` 按主题 ID 保存最后显示过的浏览词卡，旧存档默认没有浏览位置。每日学习会话与已记录进度独立保存。
 - 主题词表复用 `SpeechPlayer` 播放应用内的字音队列。连播界面随词表生命周期停止，孩子可以留在词表连续听完同一主题。
+
+## D59 · 2026-11-23 · 词表长按预览字音
+- 在 `WordListFragment` 的字卡上增加长按手势（`setOnLongClickListener` + `HapticFeedbackConstants.LONG_PRESS`），长按单个字块可直接复用 `SpeechPlayer` 试听该字读音并在底部提示栏显示 `Now playing · <字>`，不打开识字卡也不修改学习记录；离开词表时自动停止。
+- 保留识字卡禁用滑动切卡的 D49 决策，在词表层通过长按提供低误触率的触摸手势。

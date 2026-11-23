@@ -102,7 +102,7 @@
     <string name="wl_now_playing">Now playing · %1$s</string>
     <string name="wl_audio_unavailable">Theme audio couldn’t play.</string>
     <string name="wl_learned">%1$d / %2$d recorded</string>
-    <string name="wl_hint">Tap a character to hear it</string>
+    <string name="wl_hint">Tap to open · Hold to hear</string>
     <string name="wl_learned_desc">Learning recorded</string>
 
     <!-- ===== M5 · 文化模块 ===== -->

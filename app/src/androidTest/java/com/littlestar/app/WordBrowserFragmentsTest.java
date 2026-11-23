@@ -29,6 +29,7 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.longClick;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -226,6 +227,48 @@ public class WordBrowserFragmentsTest {
             }
             selectTheme("Fruits");
             assertWordList("Fruits");
+            assertThemeAudioStopped();
+        }
+    }
+
+    @Test
+    public void longPressWordTilePreviewsPronunciationWithoutOpeningCard() throws Exception {
+        LittleStarApp app = ApplicationProvider.getApplicationContext();
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch finished = new CountDownLatch(1);
+        String expected = app.getString(R.string.wl_now_playing, "猫");
+        try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
+            selectTheme("Animals");
+            assertWordList("Animals");
+            scenario.onActivity(activity -> {
+                TextView status = activity.findViewById(R.id.wordListHint);
+                status.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        String caption = s.toString();
+                        if (caption.equals(expected)) {
+                            started.countDown();
+                        } else if (caption.equals(app.getString(R.string.wl_hint)) && started.getCount() == 0) {
+                            finished.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {}
+                });
+            });
+
+            onView(allOf(withId(R.id.wordHanzi), withText("猫"))).perform(longClick());
+            assertTrue("Long-press should start audio preview for the selected character",
+                    started.await(5, TimeUnit.SECONDS));
+            assertTrue("Single-word preview should finish and restore the hint",
+                    finished.await(8, TimeUnit.SECONDS));
+            onView(withId(R.id.wordGrid)).check(matches(isDisplayed()));
+            onView(withId(R.id.listTitle)).check(matches(withText("Animals")));
+            onView(withId(R.id.stopThemeAudio)).check(matches(not(isDisplayed())));
             assertThemeAudioStopped();
         }
     }
