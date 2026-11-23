@@ -162,6 +162,8 @@
     </string-array>
 
     <!-- ===== 家长设置菜单 ===== -->
+    <string name="notif_action_learn">Learn now</string>
+    <string name="notif_action_dismiss">Dismiss</string>
     <string name="help_title">Help</string>
     <string name="help_reminders_body">Choose a time and weekdays in Learning plan. LittleStar sends one reminder on those days and stays quiet once the daily goal is complete.</string>
     <string name="help_test_sent">Test notification sent</string>

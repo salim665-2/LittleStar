@@ -1,9 +1,11 @@
 package com.littlestar.app.feature.home;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.lifecycle.ViewModelProvider;
@@ -24,6 +26,13 @@ import com.littlestar.app.feature.flashcard.FlashcardActivity;
 public final class HomeActivity extends ChildActivity {
 
     private static final int REQ_POST_NOTIFICATIONS = 41;
+    private static final String ACTION_LEARN_FROM_REMINDER =
+            "com.littlestar.app.action.LEARN_FROM_REMINDER";
+
+    @NonNull
+    public static Intent learnFromReminderIntent(@NonNull Context context) {
+        return new Intent(context, HomeActivity.class).setAction(ACTION_LEARN_FROM_REMINDER);
+    }
 
     private ActivityHomeBinding binding;
     private HomeViewModel vm;
@@ -63,6 +72,22 @@ public final class HomeActivity extends ChildActivity {
         });
 
         setupOnboarding();
+        if (savedInstanceState == null) {
+            handleReminderAction(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        handleReminderAction(intent);
+    }
+
+    private void handleReminderAction(Intent intent) {
+        if (ACTION_LEARN_FROM_REMINDER.equals(intent.getAction())
+                && container().settings.isOnboarded()) {
+            startSession();
+        }
     }
 
     @Override
@@ -108,6 +133,7 @@ public final class HomeActivity extends ChildActivity {
         binding.btnStart.setEnabled(false);
         binding.btnStart.postDelayed(() -> binding.btnStart.setEnabled(true), 800);
 
+        container().notifier.cancelDailyReminder();
         startActivity(FlashcardActivity.sessionIntent(this));
         Motion.childEnter(this);
     }

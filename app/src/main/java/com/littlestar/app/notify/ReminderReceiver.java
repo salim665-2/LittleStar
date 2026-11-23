@@ -8,7 +8,6 @@ import androidx.annotation.NonNull;
 
 import com.littlestar.app.AppContainer;
 import com.littlestar.app.LittleStarApp;
-import com.littlestar.app.feature.home.HomeActivity;
 import com.littlestar.app.domain.SessionBuilder;
 
 /**
@@ -23,6 +22,9 @@ public final class ReminderReceiver extends BroadcastReceiver {
         AppContainer container = ((LittleStarApp) context.getApplicationContext()).container();
         container.executors.diskIO().execute(() -> {
             try {
+                if (container.settings.getReminderDays().isEmpty()) {
+                    return;
+                }
                 container.content.ensureLoaded();
                 int goal = container.settings.getDailyGoal();
                 int remaining = container.store.<Integer>readBlocking(state ->
@@ -30,8 +32,7 @@ public final class ReminderReceiver extends BroadcastReceiver {
                                 container.sessionBuilder.previewTodayPlan(state, goal)));
                 if (remaining > 0) {
                     container.notifier.ensureChannels();
-                    Intent tap = new Intent(context, HomeActivity.class);
-                    container.notifier.reminder(remaining, tap);
+                    container.notifier.reminder(remaining);
                 }
             } finally {
                 // 无论是否发通知都排下一次
