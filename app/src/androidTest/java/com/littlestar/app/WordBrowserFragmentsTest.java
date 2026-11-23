@@ -6,6 +6,7 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -33,6 +34,7 @@ import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isCompletelyDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
@@ -93,6 +95,39 @@ public class WordBrowserFragmentsTest {
                 onView(withContentDescription(R.string.nav_back)).perform(click());
                 onView(withId(R.id.themesList)).check(matches(isDisplayed()));
             }
+        }
+    }
+
+    @Test
+    public void themeQuizCanBeReopenedAfterReturning() throws InterruptedException {
+        try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
+            selectTheme("Animals");
+            assertWordList("Animals");
+            for (int attempt = 0; attempt < 2; attempt++) {
+                onView(withId(R.id.btnQuiz)).check(matches(isEnabled())).perform(click());
+                awaitContent();
+                onView(withId(R.id.option0)).check(matches(isDisplayed()));
+                pressBack();
+                onView(withId(R.id.listTitle)).check(matches(withText("Animals")));
+            }
+        }
+    }
+
+    @Test
+    public void rebuildingTheWordListDiscardsPendingQuizLaunch() throws InterruptedException {
+        try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
+            selectTheme("Animals");
+            assertWordList("Animals");
+            scenario.onActivity(activity -> {
+                FragmentManager fragments = activity.getSupportFragmentManager();
+                Fragment wordList = fragments.findFragmentById(R.id.wordsPane);
+                // Recreate the view before the quiz launch callback can run on the main thread.
+                assertTrue(wordList.requireView().findViewById(R.id.btnQuiz).performClick());
+                fragments.beginTransaction().detach(wordList).commitNow();
+                fragments.beginTransaction().attach(wordList).commitNow();
+            });
+            assertWordList("Animals");
+            onView(withId(R.id.btnQuiz)).check(matches(isEnabled()));
         }
     }
 

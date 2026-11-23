@@ -1,12 +1,16 @@
 package com.littlestar.app.feature.words;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -34,6 +38,8 @@ public final class WordListFragment extends Fragment {
     private boolean playingTheme;
     private FragmentWordListBinding binding;
     private WordListViewModel vm;
+    private final ActivityResultLauncher<Intent> quizLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> resetQuizLaunch());
 
     private final SpeechPlayer.SequenceListener themeAudio = new SpeechPlayer.SequenceListener() {
         @Override
@@ -164,8 +170,9 @@ public final class WordListFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
         binding = null;
+        launchingQuiz = false;
+        super.onDestroyView();
     }
 
     /** Quiz 入口：建 THEME 会话（立即落盘）→ QuizActivity(THEME)。 */
@@ -180,17 +187,25 @@ public final class WordListFragment extends Fragment {
             long id = s.id;
             container.store.flushNow();
             container.executors.mainThread().execute(() -> {
-                if (getView() != binding.getRoot() || requireActivity().isFinishing()) {
+                if (this.binding != binding) {
                     return;
                 }
-                startActivity(QuizActivity.themeIntent(requireActivity(), id));
-                Motion.childEnter(requireActivity());
-                binding.btnQuiz.postDelayed(() -> {
-                    launchingQuiz = false;
-                    binding.btnQuiz.setEnabled(true);
-                }, 800);
+                FragmentActivity host = getActivity();
+                if (host == null || host.isFinishing() || host.isDestroyed()) {
+                    resetQuizLaunch();
+                    return;
+                }
+                quizLauncher.launch(QuizActivity.themeIntent(host, id));
+                Motion.childEnter(host);
             });
         });
+    }
+
+    private void resetQuizLaunch() {
+        launchingQuiz = false;
+        if (binding != null) {
+            binding.btnQuiz.setEnabled(vm.state().getValue() != null);
+        }
     }
 
     private final class WordAdapter extends RecyclerView.Adapter<WordAdapter.Holder> {
