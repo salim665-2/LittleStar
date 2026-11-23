@@ -1,33 +1,30 @@
 package com.littlestar.app.feature.words;
 
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
 
-import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
+import com.littlestar.app.AppContainer;
 import com.littlestar.app.R;
-import com.littlestar.app.core.lifecycle.ViewModelFactory;
 import com.littlestar.app.core.ui.ChildActivity;
 import com.littlestar.app.core.ui.Insets;
 import com.littlestar.app.core.ui.Motion;
 import com.littlestar.app.databinding.ActivityThemesBinding;
-import com.littlestar.app.databinding.ItemThemeBinding;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/** 主题选择（§7.2 / §9.2）：2 列 6 块；点块进词表。 */
+/** Hosts the themes and the selected word list in one window. */
 public final class ThemesActivity extends ChildActivity {
 
     private ActivityThemesBinding binding;
-    private ThemesViewModel vm;
-    private ThemeAdapter adapter;
+    private final OnBackPressedCallback wordListBack = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            closeWords();
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -36,107 +33,65 @@ public final class ThemesActivity extends ChildActivity {
         setContentView(binding.getRoot());
         Insets.applySystemBarPadding(binding.getRoot());
 
-        vm = new ViewModelProvider(this,
-                ViewModelFactory.of(() -> new ThemesViewModel(container())))
-                .get(ThemesViewModel.class);
-
-        adapter = new ThemeAdapter();
-        int columns = getResources().getConfiguration().screenWidthDp < 360
-                || getResources().getConfiguration().fontScale >= 1.3f ? 1 : 2;
-        binding.themesList.setLayoutManager(new GridLayoutManager(this, columns));
-        binding.themesList.addItemDecoration(new GapDecoration(
-                getResources().getDimensionPixelSize(R.dimen.ls_gap)));
-        binding.themesList.setAdapter(adapter);
-
-        binding.btnBack.setOnClickListener(v -> {
-            finish();
-            Motion.childExit(this);
-        });
-
-        vm.themes().observe(this, this::render);
-        container().content.load(container().executors, () -> vm.load());
+        FragmentManager fragments = getSupportFragmentManager();
+        if (fragments.findFragmentById(R.id.themesPane) == null) {
+            fragments.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .add(R.id.themesPane, ThemesFragment.class, null)
+                    .commitNow();
+        }
+        getOnBackPressedDispatcher().addCallback(this, wordListBack);
+        updatePanes();
     }
 
-    private void render(List<ThemesViewModel.ThemeItem> items) {
-        if (items == null || items.isEmpty()) {
+    AppContainer appContainer() {
+        return container();
+    }
+
+    boolean isTwoPane() {
+        return binding.chooseThemeHint != null;
+    }
+
+    void showWords(String themeId) {
+        FragmentManager fragments = getSupportFragmentManager();
+        Fragment current = fragments.findFragmentById(R.id.wordsPane);
+        if (fragments.isStateSaved() || (current != null
+                && themeId.equals(current.requireArguments().getString(WordListFragment.ARG_THEME_ID)))) {
             return;
         }
-        adapter.setItems(items);
-
+        Bundle args = new Bundle();
+        args.putString(WordListFragment.ARG_THEME_ID, themeId);
+        fragments.beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.wordsPane, WordListFragment.class, args)
+                .commitNow();
+        updatePanes();
     }
 
-    /** 网格横向间距（纵向由 item 的 marginBottom 提供）。 */
-    static final class GapDecoration extends RecyclerView.ItemDecoration {
-        private final int gap;
-
-        GapDecoration(int gap) {
-            this.gap = gap;
-        }
-
-        @Override
-        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
-                                   @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-            int pos = parent.getChildAdapterPosition(view);
-            int columns = parent.getLayoutManager() instanceof GridLayoutManager
-                    ? ((GridLayoutManager) parent.getLayoutManager()).getSpanCount() : 2;
-            if (columns == 1 || pos == RecyclerView.NO_POSITION) return;
-            if (pos % columns == 0) {
-                outRect.right = gap / 2;
-            } else {
-                outRect.left = gap / 2;
-            }
+    void closeWords() {
+        FragmentManager fragments = getSupportFragmentManager();
+        Fragment current = fragments.findFragmentById(R.id.wordsPane);
+        if (current != null && !fragments.isStateSaved()) {
+            fragments.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .remove(current)
+                    .commitNow();
+            updatePanes();
         }
     }
 
-    private final class ThemeAdapter extends RecyclerView.Adapter<ThemeAdapter.Holder> {
+    void closeBrowser() {
+        finish();
+        Motion.childExit(this);
+    }
 
-        private List<ThemesViewModel.ThemeItem> items = new ArrayList<>();
-
-        void setItems(@NonNull List<ThemesViewModel.ThemeItem> newItems) {
-            items = new ArrayList<>(newItems);
-            notifyDataSetChanged();
+    private void updatePanes() {
+        boolean hasWords = getSupportFragmentManager().findFragmentById(R.id.wordsPane) != null;
+        binding.themesPane.setVisibility(isTwoPane() || !hasWords ? View.VISIBLE : View.GONE);
+        binding.wordsPane.setVisibility(hasWords ? View.VISIBLE : View.GONE);
+        if (binding.chooseThemeHint != null) {
+            binding.chooseThemeHint.setVisibility(hasWords ? View.GONE : View.VISIBLE);
         }
-
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new Holder(ItemThemeBinding.inflate(getLayoutInflater(), parent, false));
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            ThemesViewModel.ThemeItem item = items.get(position);
-            int illustration = item.theme.illustration == null ? 0 : getResources().getIdentifier(
-                    item.theme.illustration, "drawable", getPackageName());
-            boolean hasIllustration = illustration != 0
-                    && !"ill_placeholder".equals(item.theme.illustration);
-            h.b.themeIllustration.setImageResource(hasIllustration
-                    ? illustration : R.drawable.ill_placeholder);
-            h.b.themeGlyph.setText(item.theme.glyph);
-            h.b.themeGlyph.setVisibility(hasIllustration ? View.GONE : View.VISIBLE);
-            boolean done = item.total > 0 && item.learned >= item.total;
-            h.b.badgeDone.setVisibility(done ? View.VISIBLE : View.GONE);
-            h.b.themeNameZh.setText(item.theme.nameZh);
-            h.b.themeNameEn.setText(item.theme.nameEn);
-            h.b.themeLearned.setText(getString(R.string.themes_learned, item.learned, item.total));
-            h.b.themeTile.setOnClickListener(v -> {
-                startActivity(WordListActivity.intent(ThemesActivity.this, item.theme.id));
-                Motion.childEnter(ThemesActivity.this);
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        final class Holder extends RecyclerView.ViewHolder {
-            final ItemThemeBinding b;
-
-            Holder(@NonNull ItemThemeBinding binding) {
-                super(binding.getRoot());
-                b = binding;
-            }
-        }
+        wordListBack.setEnabled(hasWords && !isTwoPane());
     }
 }

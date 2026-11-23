@@ -40,12 +40,7 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".feature.words.ThemesActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".feature.words.WordListActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:exported="false" />
         <activity
             android:name=".feature.culture.CultureCategoriesActivity"
             android:exported="false"
