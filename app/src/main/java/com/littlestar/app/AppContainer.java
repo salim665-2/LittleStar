@@ -53,7 +53,7 @@ public final class AppContainer {
         sessionBuilder = new SessionBuilder(content, scheduler, clock, new Random());
         sfx = new SfxPlayer(app, settings::isSoundEnabled);
         speech = new SpeechPlayer(app);
-        notifier = new Notifier(app);
+        notifier = new Notifier(app, clock);
         reminders = new ReminderScheduler(app, settings, clock);
         store.loadAsync();   // 后台线程读入 progress.json
     }

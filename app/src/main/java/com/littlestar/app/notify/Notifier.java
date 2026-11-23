@@ -11,6 +11,11 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
 import com.littlestar.app.R;
+import com.littlestar.app.core.time.AppClock;
+import com.littlestar.app.feature.home.HomeActivity;
+
+import java.time.Duration;
+import java.time.ZonedDateTime;
 
 /**
  * 通知出口（§10.3）。每日学习提醒；媒体通知由 Media3 管理。
@@ -25,12 +30,17 @@ public final class Notifier {
     /** 家长设置菜单「发送测试通知」专用；与每日提醒分开，避免覆盖。 */
     public static final int ID_TEST = 1099;
 
+    private static final int REQUEST_START_LEARNING = 1003;
+    static final String EXTRA_NOTIFICATION_ID = "notificationId";
+
     private final Context app;
     private final NotificationManager nm;
+    private final AppClock clock;
 
-    public Notifier(@NonNull Context context) {
+    public Notifier(@NonNull Context context, @NonNull AppClock clock) {
         this.app = context.getApplicationContext();
         this.nm = app.getSystemService(NotificationManager.class);
+        this.clock = clock;
     }
 
     /** App 启动时建渠道（幂等）。 */
@@ -43,36 +53,63 @@ public final class Notifier {
     }
 
     /** 每日学习提醒：「该学汉字啦：今天还有 N 个字」。 */
-    public void reminder(int remainingWords, @NonNull Intent tapIntent) {
+    public void reminder(int remainingWords) {
         String text = app.getString(R.string.notif_reminder_text, remainingWords);
-        notify(ID_REMINDER, CHANNEL_REMINDER, app.getString(R.string.notif_reminder_title), text, tapIntent);
+        NotificationCompat.Builder notification = reminderNotification(ID_REMINDER,
+                app.getString(R.string.notif_reminder_title), text, new Intent(app, HomeActivity.class));
+        PendingIntent startLearning = activityAction(REQUEST_START_LEARNING,
+                HomeActivity.learnFromReminderIntent(app));
+        ZonedDateTime now = clock.now().atZone(clock.zone());
+        long remainingTodayMillis = Duration.between(now.toInstant(),
+                now.toLocalDate().plusDays(1).atStartOfDay(now.getZone()).toInstant()).toMillis();
+        notification.addAction(R.drawable.ic_play, app.getString(R.string.notif_action_learn), startLearning)
+                .addAction(dismissAction(ID_REMINDER))
+                .setTimeoutAfter(Math.max(1, remainingTodayMillis));
+        nm.notify(ID_REMINDER, notification.build());
     }
 
     /** 家长设置菜单的测试通知：立即展示，用于确认通知权限和渠道正常。 */
     public void test(@NonNull Intent tapIntent) {
-        notify(ID_TEST, CHANNEL_REMINDER,
+        Notification notification = reminderNotification(ID_TEST,
                 app.getString(R.string.notif_test_title),
-                app.getString(R.string.notif_test_text), tapIntent);
+                app.getString(R.string.notif_test_text), tapIntent)
+                .addAction(dismissAction(ID_TEST))
+                .build();
+        nm.notify(ID_TEST, notification);
     }
 
-    private void notify(int id, @NonNull String channel, @NonNull String title, @NonNull String text,
-                        @NonNull Intent tapIntent) {
-        // A notification must show Home itself, not merely bring an existing
-        // task (which may have Settings on top) to the foreground.
-        Intent launchIntent = new Intent(tapIntent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        // UPDATE_CURRENT refreshes extras but can retain an older token's launch
-        // flags after an app update; recreate that token to apply this route.
-        PendingIntent pi = PendingIntent.getActivity(app, id, launchIntent,
+    public void cancelDailyReminder() {
+        nm.cancel(ID_REMINDER);
+    }
+
+    private NotificationCompat.Action dismissAction(int id) {
+        Intent dismiss = new Intent(app, ReminderDismissReceiver.class)
+                .putExtra(EXTRA_NOTIFICATION_ID, id);
+        PendingIntent action = PendingIntent.getBroadcast(app, id, dismiss,
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        Notification n = new NotificationCompat.Builder(app, channel)
+        return new NotificationCompat.Action(R.drawable.ic_close,
+                app.getString(R.string.notif_action_dismiss), action);
+    }
+
+    private NotificationCompat.Builder reminderNotification(int id, String title,
+                                                             String text, Intent tapIntent) {
+        return new NotificationCompat.Builder(app, CHANNEL_REMINDER)
                 .setSmallIcon(R.drawable.ic_stat_panda)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
-                .setContentIntent(pi)
-                .setAutoCancel(true)
-                .build();
-        nm.notify(id, n);
+                .setContentIntent(activityAction(id, tapIntent))
+                .setAutoCancel(true);
+    }
+
+    private PendingIntent activityAction(int requestCode, Intent intent) {
+        // A notification must show Home itself, not merely bring an existing
+        // task (which may have Settings on top) to the foreground.
+        Intent launchIntent = new Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // UPDATE_CURRENT refreshes extras but can retain an older token's launch
+        // flags after an app update; recreate that token to apply this route.
+        return PendingIntent.getActivity(app, requestCode, launchIntent,
+                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 }
