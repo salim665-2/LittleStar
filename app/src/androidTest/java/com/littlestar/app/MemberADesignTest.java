@@ -10,7 +10,6 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.lifecycle.SavedStateHandle;
 import com.littlestar.app.feature.words.ThemesActivity;
-import com.littlestar.app.feature.words.WordListActivity;
 import com.littlestar.app.feature.flashcard.FlashcardActivity;
 import com.littlestar.app.feature.quiz.QuizActivity;
 import com.littlestar.app.feature.quiz.QuizViewModel;
@@ -25,6 +24,8 @@ import org.junit.runner.RunWith;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.*;
 
 /** Persistent regression checks; also run with wm size 960x1920/density480 + font_scale1.3. */
@@ -47,9 +48,7 @@ public class MemberADesignTest {
         try(ActivityScenario<ThemesActivity> s=ActivityScenario.launch(ThemesActivity.class)) {
             SystemClock.sleep(700); s.onActivity(a->{ assertVisible(a.findViewById(R.id.btnBack)); assertVisible(a.findViewById(R.id.themesList)); });
             UiEvidence.capture("A1_checked");
-        }
-        Intent words=new Intent(ApplicationProvider.getApplicationContext(),WordListActivity.class).putExtra("themeId","animals");
-        try(ActivityScenario<WordListActivity> s=ActivityScenario.launch(words)) {
+            onView(allOf(withId(R.id.themeNameEn), withText("Animals"))).perform(click());
             SystemClock.sleep(700); s.onActivity(a->{ assertVisible(a.findViewById(R.id.btnQuiz)); assertVisible(a.findViewById(R.id.wordGrid)); });
             UiEvidence.capture("A2_checked");
         }
@@ -70,7 +69,6 @@ public class MemberADesignTest {
             SystemClock.sleep(700); UiEvidence.capture("A4_unanswered");
             onView(withId(R.id.option0)).perform(click()); SystemClock.sleep(500);
             s.onActivity(a->{
-                assertVisible(a.findViewById(R.id.btnNext));
                 for(int id:new int[]{R.id.option0,R.id.option1,R.id.option2,R.id.option3}) {
                     View option=a.findViewById(id); assertVisible(option);
                     TextView hanzi=option.findViewById(R.id.optionHanzi);
@@ -81,6 +79,11 @@ public class MemberADesignTest {
                 assertTextFits(a.findViewById(R.id.feedbackText));
             });
             UiEvidence.capture("A4_answered");
+            s.onActivity(a -> {
+                View next = a.findViewById(R.id.btnNext);
+                next.requestRectangleOnScreen(new Rect(0, 0, next.getWidth(), next.getHeight()), true);
+            });
+            s.onActivity(a -> assertVisible(a.findViewById(R.id.btnNext)));
         }
     }
     @Test public void quizNewViewModel_restoresOptionsAndAnswer() throws Exception {

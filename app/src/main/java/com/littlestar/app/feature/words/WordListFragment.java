@@ -1,24 +1,22 @@
 package com.littlestar.app.feature.words;
 
-import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.littlestar.app.AppContainer;
 import com.littlestar.app.R;
 import com.littlestar.app.core.lifecycle.ViewModelFactory;
-import com.littlestar.app.core.ui.ChildActivity;
-import com.littlestar.app.core.ui.Insets;
 import com.littlestar.app.core.ui.Motion;
 import com.littlestar.app.data.store.ProgressState;
-import com.littlestar.app.databinding.ActivityWordListBinding;
+import com.littlestar.app.databinding.FragmentWordListBinding;
 import com.littlestar.app.databinding.ItemWordTileBinding;
 import com.littlestar.app.feature.flashcard.FlashcardActivity;
 import com.littlestar.app.feature.quiz.QuizActivity;
@@ -27,54 +25,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** 词表（§7.3 / §9.3）：6 字网格 + Quiz(THEME) 入口。数据驱动：返回时绿勾自动刷新。 */
-public final class WordListActivity extends ChildActivity {
+public final class WordListFragment extends Fragment {
 
-    private static final String EXTRA_THEME_ID = "themeId";
+    static final String ARG_THEME_ID = "themeId";
+    private boolean launchingQuiz;
 
-    @NonNull
-    public static Intent intent(@NonNull Activity from, @NonNull String themeId) {
-        Intent i = new Intent(from, WordListActivity.class);
-        i.putExtra(EXTRA_THEME_ID, themeId);
-        return i;
+    public WordListFragment() {
+        super(R.layout.fragment_word_list);
     }
-
-    private ActivityWordListBinding binding;
-    private WordListViewModel vm;
-    private WordAdapter adapter;
-    private String themeId;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityWordListBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-        Insets.applySystemBarPadding(binding.getRoot());
-
-        vm = new ViewModelProvider(this,
-                ViewModelFactory.of(() -> new WordListViewModel(container())))
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        FragmentWordListBinding binding = FragmentWordListBinding.bind(view);
+        ThemesActivity host = (ThemesActivity) requireActivity();
+        AppContainer container = host.appContainer();
+        WordListViewModel vm = new ViewModelProvider(this,
+                ViewModelFactory.of(() -> new WordListViewModel(container)))
                 .get(WordListViewModel.class);
 
-        themeId = getIntent().getStringExtra(EXTRA_THEME_ID);
-
-        adapter = new WordAdapter();
-        int columns = getResources().getConfiguration().screenWidthDp < 360
-                || getResources().getConfiguration().fontScale >= 1.3f ? 1 : 2;
-        binding.wordGrid.setLayoutManager(new GridLayoutManager(this, columns));
-        binding.wordGrid.addItemDecoration(new ThemesActivity.GapDecoration(
+        String themeId = requireArguments().getString(ARG_THEME_ID);
+        WordAdapter adapter = new WordAdapter();
+        adapter.setStateRestorationPolicy(RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
+        GridLayoutManager grid = new GridLayoutManager(requireContext(), 1);
+        binding.wordGrid.setLayoutManager(grid);
+        binding.wordGrid.addItemDecoration(new ThemesFragment.GapDecoration(
                 getResources().getDimensionPixelSize(R.dimen.ls_gap)));
         binding.wordGrid.setAdapter(adapter);
+        if (getResources().getConfiguration().fontScale < 1.3f) {
+            int minWidth = getResources().getDimensionPixelSize(R.dimen.ls_word_grid_two_column_width);
+            binding.wordGrid.addOnLayoutChangeListener((v, left, top, right, bottom,
+                                                       oldLeft, oldTop, oldRight, oldBottom) -> {
+                int columns = right - left >= minWidth ? 2 : 1;
+                if (grid.getSpanCount() != columns) {
+                    grid.setSpanCount(columns);
+                }
+            });
+        }
 
-        binding.btnBack.setOnClickListener(v -> {
-            finish();
-            Motion.childExit(this);
-        });
-        binding.btnQuiz.setOnClickListener(v -> startThemeQuiz());
+        binding.btnWordListBack.setVisibility(host.isTwoPane() ? View.INVISIBLE : View.VISIBLE);
+        binding.btnWordListBack.setOnClickListener(v -> host.closeWords());
+        binding.btnQuiz.setEnabled(false);
+        binding.btnQuiz.setOnClickListener(v -> startThemeQuiz(binding, container, themeId));
 
-        vm.state().observe(this, this::render);
-        container().content.load(container().executors, () -> vm.init(themeId));
+        vm.state().observe(getViewLifecycleOwner(), state -> render(binding, adapter, state));
+        container.content.load(container.executors, () -> vm.init(themeId));
     }
 
-    private void render(WordListViewModel.UiState s) {
+    private void render(FragmentWordListBinding binding, WordAdapter adapter, WordListViewModel.UiState s) {
         if (s == null) {
             return;
         }
@@ -84,26 +81,30 @@ public final class WordListActivity extends ChildActivity {
         binding.listProgressText.setText(
                 getString(R.string.wl_learned, s.learned, s.words.size()));
         adapter.setItems(s.words);
+        binding.btnQuiz.setEnabled(!launchingQuiz);
     }
 
     /** Quiz 入口：建 THEME 会话（立即落盘）→ QuizActivity(THEME)。 */
-    private void startThemeQuiz() {
-        // 防连点：双击不重复建会话
+    private void startThemeQuiz(FragmentWordListBinding binding, AppContainer container, String themeId) {
         if (!binding.btnQuiz.isEnabled()) {
             return;
         }
+        launchingQuiz = true;
         binding.btnQuiz.setEnabled(false);
-        binding.btnQuiz.postDelayed(() -> binding.btnQuiz.setEnabled(true), 800);
-        container().store.update(state -> {
-            ProgressState.Session s = container().sessionBuilder.buildThemeSession(state, themeId);
+        container.store.update(state -> {
+            ProgressState.Session s = container.sessionBuilder.buildThemeSession(state, themeId);
             long id = s.id;
-            container().store.flushNow();
-            container().executors.mainThread().execute(() -> {
-                if (isFinishing() || isDestroyed()) {
+            container.store.flushNow();
+            container.executors.mainThread().execute(() -> {
+                if (getView() != binding.getRoot() || requireActivity().isFinishing()) {
                     return;
                 }
-                startActivity(QuizActivity.themeIntent(this, id));
-                Motion.childEnter(this);
+                startActivity(QuizActivity.themeIntent(requireActivity(), id));
+                Motion.childEnter(requireActivity());
+                binding.btnQuiz.postDelayed(() -> {
+                    launchingQuiz = false;
+                    binding.btnQuiz.setEnabled(true);
+                }, 800);
             });
         });
     }
@@ -127,7 +128,8 @@ public final class WordListActivity extends ChildActivity {
         public void onBindViewHolder(@NonNull Holder h, int position) {
             WordListViewModel.WordItem item = items.get(position);
             int resId = item.word.image == null ? 0
-                    : getResources().getIdentifier(item.word.image, "drawable", getPackageName());
+                    : getResources().getIdentifier(item.word.image, "drawable",
+                    requireContext().getPackageName());
             boolean hasDedicatedIllustration = resId != 0 && !"ill_placeholder".equals(item.word.image);
             if (hasDedicatedIllustration) {
                 h.b.wordIllustration.setImageResource(resId);
@@ -142,14 +144,17 @@ public final class WordListActivity extends ChildActivity {
             h.b.wordEnglish.setText(item.word.english);
             h.b.wordDone.setVisibility(item.learned ? View.VISIBLE : View.GONE);
             h.b.wordTile.setOnClickListener(v -> {
-                // 点字块 → Flashcard(BROWSE) 并自动朗读
+                int selected = h.getBindingAdapterPosition();
+                if (selected == RecyclerView.NO_POSITION) {
+                    return;
+                }
                 List<String> ids = new ArrayList<>();
                 for (WordListViewModel.WordItem it : items) {
                     ids.add(it.word.id);
                 }
                 startActivity(FlashcardActivity.browseIntent(
-                        WordListActivity.this, ids, h.getBindingAdapterPosition()));
-                Motion.childEnter(WordListActivity.this);
+                        requireActivity(), ids, selected));
+                Motion.childEnter(requireActivity());
             });
         }
 

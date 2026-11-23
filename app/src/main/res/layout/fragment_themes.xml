@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/themesRoot"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/ls_paper">
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/themesContent"
+        android:layout_width="0dp" android:layout_height="0dp" android:padding="@dimen/ls_margin"
+        app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="@dimen/ls_content_max_width">
+        <com.littlestar.app.core.ui.LearningButton
+            android:id="@+id/btnBack"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="@dimen/ls_btn_icon"
+            android:layout_height="@dimen/ls_btn_icon"
+            android:contentDescription="@string/nav_back"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:icon="@drawable/ic_back" />
+        <TextView android:id="@+id/themesTopTitle" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:minHeight="@dimen/ls_btn_icon" android:gravity="center_vertical"
+            android:layout_marginTop="@dimen/ls_gap_sm" android:text="@string/themes_title"
+            android:accessibilityHeading="true" android:textAppearance="@style/TextAppearance.LS.Display"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toBottomOf="@id/btnBack" />
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/themesList"
+            android:layout_width="0dp" android:layout_height="0dp" android:layout_marginTop="@dimen/ls_gap"
+            android:clipToPadding="false" android:overScrollMode="never"
+            app:layout_constraintTop_toBottomOf="@id/themesTopTitle" app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
