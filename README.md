@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png?v=20261026">
-  <img src="docs/assets/banner.png?v=20261026" width="880" alt="LittleStar — 汉字积木，给海外华裔孩子的识字 App" />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png?v=20261123">
+  <img src="docs/assets/banner.png?v=20261123" width="880" alt="LittleStar — 汉字积木，给海外华裔孩子的识字 App" />
 </picture>
 
 **汉字积木 · 给海外华裔孩子的识字 App**
@@ -19,9 +19,9 @@
 
 <hr />
 
-<a href="#架构"><img src="docs/screenshots/readme/hero.png?v=20261026" width="880" alt="首页 / 识字卡 / 完成" /></a>
+<img src="docs/screenshots/readme/hero.png?v=20261123" width="880" alt="浅色 Material 3 首页、识字卡和学习完成页" />
 
-<sub>早期版本的学习流程截图。当前应用使用固定浅色的 Material 3 界面，每日新字数量可在学习计划中设置。</sub>
+<sub>首页、识字卡和学习完成页。应用使用固定浅色的 Material 3 界面。</sub>
 
 </div>
 
@@ -35,9 +35,9 @@
 
 <table>
 <tr>
-<td align="center" width="50%"><img src="docs/screenshots/readme/feature_quiz.png?v=20261026" width="230" alt="测验：答错显示陶土色并直接给出答案" /><br/>
-<b>字</b><br/><sub>识字卡 → 四选一测验 → 学习完成。答错变陶土色，直接给答案。</sub></td>
-<td align="center" width="50%"><img src="docs/screenshots/readme/feature_player.png?v=20261026" width="230" alt="播放器：歌词逐句高亮" /><br/>
+<td align="center" width="50%"><img src="docs/screenshots/readme/feature_quiz.png?v=20261123" width="230" alt="听音测验中的答题反馈" /><br/>
+<b>字</b><br/><sub>识字卡 → 四选一测验 → 学习完成。答错时会显示正确答案。</sub></td>
+<td align="center" width="50%"><img src="docs/screenshots/readme/feature_player.png?v=20261123" width="230" alt="《两只老虎》的播放页，显示圆角封面和播放控件" /><br/>
 <b>文</b><br/><sub>儿歌、故事、古诗。先看简介与学习重点，再收听；支持后台播放、暂停、切歌和拖动进度。</sub></td>
 </tr>
 </table>
@@ -67,7 +67,7 @@
 
 ## 架构
 
-<p align="center"><img src="docs/screenshots/readme/architecture.png?v=20261026" width="880" alt="LittleStar 架构" /></p>
+<p align="center"><img src="docs/screenshots/readme/architecture.png?v=20261123" width="880" alt="LittleStar 架构，包含 AndroidX Fragment 与每日提醒" /></p>
 
 <p align="center">
   <sub><b>Java 17</b> · XML View + ViewBinding · AndroidX Fragment · Material 3 · MVVM + LiveData · Media3 ExoPlayer · Gson + AtomicFile<br/>
