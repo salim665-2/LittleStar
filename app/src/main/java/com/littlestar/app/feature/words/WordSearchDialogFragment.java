@@ -118,7 +118,7 @@ public final class WordSearchDialogFragment extends DialogFragment {
         if (words == null) {
             return;
         }
-        String query = input.strip().toLowerCase(Locale.ROOT);
+        String query = input.replace('\u3000', ' ').trim().toLowerCase(Locale.ROOT);
         String pinyinQuery = pinyinKey(query);
         matches.clear();
         List<String> labels = new ArrayList<>();
