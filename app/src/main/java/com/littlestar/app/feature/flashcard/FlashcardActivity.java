@@ -188,6 +188,9 @@ public final class FlashcardActivity extends ChildActivity {
         if (!cur.id.equals(renderedWordId)) {
             boolean first = renderedWordId == null;
             renderedWordId = cur.id;
+            if (s.mode == FlashcardViewModel.Mode.BROWSE && themeId != null) {
+                container().progress.rememberBrowsedWord(themeId, cur.id);
+            }
             binding.pageCard.pageHanzi.setText(cur.hanzi);
             binding.pageCard.pagePinyin.setText(cur.pinyin);
             binding.pageCard.pageEnglish.setText(cur.english);

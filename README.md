@@ -59,6 +59,15 @@
 
 主题列表和词表分别由 `ThemesFragment` 和 `WordListFragment` 实现。同一个 `ThemesActivity` 通过 `FragmentManager` 管理切换，并在 Activity 重建后恢复所选主题。手机和平板的示例见 [PR #16](https://github.com/Green-hats/LittleStar/pull/16)。
 
+### 词汇浏览工具栏与菜单
+
+进入 **Browse words** 并选择主题，再打开 **Words** 工具栏右上角的菜单。
+
+- **Start browsing / Continue browsing** 从第一张词卡开始，或回到该主题上次看到的词卡。翻到下一张词卡后返回词表，再点 **Continue browsing** 即可验证。
+- **Play theme audio** 按词表顺序播放该主题的字音。词表底部显示正在播放的字，可点 **Stop** 停止。切换主题或离开词表时也会停止。
+
+手机上，工具栏返回箭头会从词表回到主题。双栏布局中，返回箭头回到首页。
+
 ### 可操作学习提醒
 
 1. 授予 LittleStar 系统通知权限。在 **Learning plan** 勾选当天，设置稍后的提醒时间并保存，保留至少一个待学汉字。

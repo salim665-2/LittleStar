@@ -44,8 +44,6 @@ public final class ThemesFragment extends Fragment {
                 getResources().getDimensionPixelSize(R.dimen.ls_gap)));
         binding.themesList.setAdapter(adapter);
 
-        binding.btnBack.setOnClickListener(v -> host.closeBrowser());
-
         vm.themes().observe(getViewLifecycleOwner(), adapter::setItems);
         host.appContainer().content.load(host.appContainer().executors, vm::load);
     }

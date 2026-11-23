@@ -15,6 +15,7 @@ import com.littlestar.app.core.time.AppClock;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -151,6 +152,9 @@ public final class ProgressStore {
             int version = obj.has("schemaVersion") ? obj.get("schemaVersion").getAsInt() : 1;
             JsonObject migrated = StateMigrator.migrate(obj, version);
             ProgressState parsed = gson.fromJson(migrated, ProgressState.class);
+            if (parsed.lastBrowsedWords == null) {
+                parsed.lastBrowsedWords = new HashMap<>();
+            }
             if (parsed.words == null || parsed.dailyPlans == null || parsed.sessions == null
                     || parsed.words.containsValue(null)
                     || parsed.dailyPlans.values().stream()

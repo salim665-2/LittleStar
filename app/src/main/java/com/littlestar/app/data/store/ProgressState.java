@@ -18,6 +18,8 @@ public final class ProgressState {
     public int schemaVersion = ProgressStore.CURRENT_VERSION;
     /** key = wordId；没学过的字不在 map 里 */
     public Map<String, WordProgress> words = new HashMap<>();
+    /** Last flashcard opened in browse mode, by theme ID. */
+    public Map<String, String> lastBrowsedWords = new HashMap<>();
     /** key = ISO 日期 */
     public Map<String, DailyPlan> dailyPlans = new HashMap<>();
     public List<Session> sessions = new ArrayList<>();

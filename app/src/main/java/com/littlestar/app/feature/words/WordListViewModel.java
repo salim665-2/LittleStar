@@ -6,7 +6,6 @@ import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.littlestar.app.AppContainer;
-import com.littlestar.app.data.content.ContentRepository;
 import com.littlestar.app.data.content.model.Theme;
 import com.littlestar.app.data.content.model.Word;
 import com.littlestar.app.data.store.ProgressState;
@@ -32,11 +31,13 @@ public final class WordListViewModel extends ViewModel {
         public final Theme theme;
         public final List<WordItem> words;
         public final int learned;
+        final int resumeIndex;
 
-        public UiState(Theme theme, List<WordItem> words, int learned) {
+        UiState(Theme theme, List<WordItem> words, int learned, int resumeIndex) {
             this.theme = theme;
             this.words = words;
             this.learned = learned;
+            this.resumeIndex = resumeIndex;
         }
     }
 
@@ -63,28 +64,26 @@ public final class WordListViewModel extends ViewModel {
         if (ps == null) {
             return null;
         }
-        ContentRepository content = container.content;
-        Theme theme = null;
-        for (Theme t : content.themes()) {
-            if (t.id.equals(themeId)) {
-                theme = t;
-                break;
-            }
-        }
+        Theme theme = container.content.themeById(themeId);
         if (theme == null) {
             return null;
         }
         List<WordItem> words = new ArrayList<>();
         int learned = 0;
+        int resumeIndex = -1;
+        String lastWord = ps.lastBrowsedWords.get(themeId);
         for (Word w : theme.words) {
             ProgressState.WordProgress wp = ps.words.get(w.id);
             boolean l = wp != null && wp.learnedAt != null;
             if (l) {
                 learned++;
             }
+            if (w.id.equals(lastWord)) {
+                resumeIndex = words.size();
+            }
             words.add(new WordItem(w, l));
         }
-        return new UiState(theme, Collections.unmodifiableList(words), learned);
+        return new UiState(theme, Collections.unmodifiableList(words), learned, resumeIndex);
     }
 
     @NonNull
