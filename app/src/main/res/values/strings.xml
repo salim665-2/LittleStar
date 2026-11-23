@@ -95,9 +95,13 @@
     <string name="themes_words_count">%1$d characters</string>
     <string name="themes_learned">%1$d/%2$d recorded</string>
     <string name="wl_quiz">Quiz</string>
-    <string name="wl_practice">Practice words</string>
-    <string name="wl_show_unrecorded">Unrecorded only</string>
-    <string name="wl_all_recorded">You’ve recorded every word in this theme.</string>
+    <string name="word_search_title">Find a word</string>
+    <string name="word_search_hint">Type a word</string>
+    <string name="word_search_prompt">Search by character, pinyin, or English.</string>
+    <string name="word_search_empty">No words found. Try another search.</string>
+    <string name="word_search_result">%1$s · %2$s · %3$s</string>
+    <string name="word_review_recorded">Review recorded</string>
+    <string name="word_review_empty">Record a word on its flashcard or answer it correctly in a quiz to review it here.</string>
     <string name="wl_learned">%1$d / %2$d recorded</string>
     <string name="wl_hint">Tap a character to hear it</string>
     <string name="wl_learned_desc">Learning recorded</string>

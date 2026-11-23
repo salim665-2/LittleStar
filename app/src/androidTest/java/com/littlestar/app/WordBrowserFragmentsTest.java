@@ -4,7 +4,6 @@ import android.graphics.Rect;
 import android.view.View;
 
 import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -24,13 +23,14 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -89,62 +89,78 @@ public class WordBrowserFragmentsTest {
     }
 
     @Test
-    public void menuFiltersWordsAndPracticesTheVisibleCards() throws Exception {
-        setRecordedAnimalWords(1);
+    public void menuFindsWordsAcrossThemesAndReviewsRecordedCards() throws Exception {
+        setRecordedWords(false);
         try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
             onView(withId(R.id.browserToolbar)).check(matches(isDisplayed()));
+            openWordMenu();
+            onView(withText(R.string.word_search_title)).check(matches(isDisplayed()));
+            UiEvidence.capture("word_browser_options");
+            onView(withText(R.string.word_review_recorded)).perform(click());
+            awaitContent();
+            onView(withText(R.string.word_review_empty)).check(matches(isDisplayed()));
+            onView(withId(android.R.id.button1)).perform(click());
+
             selectTheme("Animals");
             assertWordList("Animals");
-            assertWordCount(scenario, 6);
             openWordMenu();
-            onView(withText(R.string.wl_practice)).check(matches(isDisplayed()));
-            UiEvidence.capture("word_browser_options");
-            onView(withText(R.string.wl_show_unrecorded)).perform(click());
-            assertWordCount(scenario, 5);
+            onView(withText(R.string.word_search_title)).perform(click());
+            searchFor("zzzz");
+            onView(withText(R.string.word_search_empty)).check(matches(isDisplayed()));
+            String peach = "桃 · táo · peach";
+            for (String query : new String[] {" PEACH ", "tao", "桃"}) {
+                searchFor(query);
+                onView(withText(peach)).check(matches(isDisplayed()));
+            }
+            onView(withId(R.id.wordQuery)).perform(click(), replaceText("tao"));
+            onView(withText(peach)).check(matches(isDisplayed()));
+            searchFor("桃");
 
             scenario.recreate();
-            assertWordList("Animals");
-            assertWordCount(scenario, 5);
-            openWordMenu();
-            onView(withText(R.string.wl_practice)).perform(click());
             awaitContent();
-            onView(allOf(withId(R.id.pageHanzi), withText("狗"), isDisplayed()))
-                    .check(matches(isDisplayed()));
+            onView(withId(R.id.wordQuery)).perform(closeSoftKeyboard()).check(matches(withText("桃")));
+            UiEvidence.capture("word_browser_search");
+            onView(withText(peach)).perform(click());
+            assertCard("桃");
             pressBack();
+            onView(withText(peach)).check(matches(isDisplayed()));
+            onView(withId(R.id.wordQuery)).perform(closeSoftKeyboard());
+            onView(withId(android.R.id.button2)).perform(click());
             assertWordList("Animals");
 
-            setRecordedAnimalWords(6);
-            assertWordCount(scenario, 0);
-            onView(withId(R.id.wordGridEmpty)).check(matches(isDisplayed()));
+            setRecordedWords(true);
             openWordMenu();
-            onView(withText(R.string.wl_show_unrecorded)).perform(click());
-            assertWordCount(scenario, 6);
+            onView(withText(R.string.word_review_recorded)).perform(click());
+            assertCard("狗");
+            pressBack();
+            assertWordList("Animals");
         }
     }
 
-    private static void setRecordedAnimalWords(int count) throws InterruptedException {
+    private static void setRecordedWords(boolean recorded) throws InterruptedException {
         LittleStarApp app = ApplicationProvider.getApplicationContext();
         app.container().store.update(state -> {
-            String[] wordIds = {"mao", "gou", "niao", "yu", "ma", "niu"};
-            for (int index = 0; index < wordIds.length; index++) {
-                String wordId = wordIds[index];
-                if (index < count) {
-                    ProgressState.WordProgress wordProgress = new ProgressState.WordProgress();
-                    wordProgress.learnedAt = 1L;
-                    state.words.put(wordId, wordProgress);
-                } else {
-                    state.words.remove(wordId);
-                }
+            state.words.clear();
+            if (recorded) {
+                ProgressState.WordProgress peach = new ProgressState.WordProgress();
+                peach.learnedAt = 1L;
+                state.words.put("tao", peach);
+                ProgressState.WordProgress dog = new ProgressState.WordProgress();
+                dog.learnedAt = 2L;
+                state.words.put("gou", dog);
             }
         });
         awaitContent();
     }
 
-    private static void assertWordCount(ActivityScenario<ThemesActivity> scenario, int count) {
-        scenario.onActivity(activity -> {
-            RecyclerView grid = activity.findViewById(R.id.wordGrid);
-            assertEquals(count, grid.getAdapter().getItemCount());
-        });
+    private static void searchFor(String query) throws InterruptedException {
+        awaitContent();
+        onView(withId(R.id.wordQuery)).perform(replaceText(query), closeSoftKeyboard());
+    }
+
+    private static void assertCard(String hanzi) throws InterruptedException {
+        awaitContent();
+        onView(allOf(withId(R.id.pageHanzi), withText(hanzi), isDisplayed())).check(matches(isDisplayed()));
     }
 
     private static void openWordMenu() {

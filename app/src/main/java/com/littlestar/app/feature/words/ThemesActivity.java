@@ -11,18 +11,29 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Lifecycle;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.littlestar.app.AppContainer;
 import com.littlestar.app.R;
 import com.littlestar.app.core.ui.ChildActivity;
 import com.littlestar.app.core.ui.Insets;
 import com.littlestar.app.core.ui.Motion;
+import com.littlestar.app.data.content.model.Word;
+import com.littlestar.app.data.store.ProgressState;
 import com.littlestar.app.databinding.ActivityThemesBinding;
+import com.littlestar.app.feature.flashcard.FlashcardActivity;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /** Hosts the themes and the selected word list in one window. */
 public final class ThemesActivity extends ChildActivity {
 
+    private static final String SEARCH_DIALOG = "wordSearch";
     private ActivityThemesBinding binding;
+    private boolean openingReview;
     private final OnBackPressedCallback browserBack = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
@@ -110,46 +121,71 @@ public final class ThemesActivity extends ChildActivity {
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
-        WordListFragment words = selectedWords();
-        boolean ready = words != null && words.hasWords();
-        menu.setGroupVisible(R.id.wordBrowserActions, ready);
-        if (ready) {
-            menu.findItem(R.id.action_practice_words).setEnabled(words.hasVisibleWords());
-            menu.findItem(R.id.action_show_unrecorded).setChecked(words.isShowingUnrecorded());
-        }
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        WordListFragment words = selectedWords();
-        if (words != null && words.hasWords()) {
-            if (item.getItemId() == R.id.action_practice_words && words.hasVisibleWords()) {
-                words.practiceWords();
-                return true;
+        if (item.getItemId() == R.id.action_find_word) {
+            FragmentManager fragments = getSupportFragmentManager();
+            if (!fragments.isStateSaved() && fragments.findFragmentByTag(SEARCH_DIALOG) == null) {
+                new WordSearchDialogFragment().showNow(fragments, SEARCH_DIALOG);
             }
-            if (item.getItemId() == R.id.action_show_unrecorded) {
-                words.toggleUnrecorded();
-                invalidateOptionsMenu();
-                return true;
-            }
+            return true;
+        }
+        if (item.getItemId() == R.id.action_review_recorded) {
+            openRecordedWords();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    @Nullable
-    private WordListFragment selectedWords() {
-        return (WordListFragment) getSupportFragmentManager().findFragmentById(R.id.wordsPane);
+    private void openRecordedWords() {
+        if (openingReview) {
+            return;
+        }
+        openingReview = true;
+        AppContainer app = appContainer();
+        app.store.read(state -> {
+            app.content.ensureLoaded();
+            List<Word> recorded = new ArrayList<>();
+            for (Word word : app.content.wordsInOrder()) {
+                ProgressState.WordProgress progress = state.words.get(word.id);
+                if (progress != null && progress.learnedAt != null) {
+                    recorded.add(word);
+                }
+            }
+            recorded.sort(Comparator.comparingLong(
+                    (Word word) -> state.words.get(word.id).learnedAt).reversed());
+            List<String> ids = new ArrayList<>();
+            for (Word word : recorded) {
+                ids.add(word.id);
+            }
+            return ids;
+        }, wordIds -> {
+            openingReview = false;
+            if (isFinishing() || !getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                return;
+            }
+            if (wordIds.isEmpty()) {
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.word_review_recorded)
+                        .setMessage(R.string.word_review_empty)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+            } else {
+                openCards(wordIds, 0);
+            }
+        });
+    }
+
+    void openCards(List<String> wordIds, int index) {
+        startActivity(FlashcardActivity.browseIntent(this, wordIds, index));
+        Motion.childEnter(this);
     }
 
     private void updatePanes() {
-        boolean hasWords = selectedWords() != null;
+        boolean hasWords = getSupportFragmentManager().findFragmentById(R.id.wordsPane) != null;
         binding.themesPane.setVisibility(isTwoPane() || !hasWords ? View.VISIBLE : View.GONE);
         binding.wordsPane.setVisibility(hasWords ? View.VISIBLE : View.GONE);
         if (binding.chooseThemeHint != null) {
             binding.chooseThemeHint.setVisibility(hasWords ? View.GONE : View.VISIBLE);
         }
-        invalidateOptionsMenu();
     }
 }

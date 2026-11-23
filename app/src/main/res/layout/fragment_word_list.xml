@@ -41,20 +41,6 @@
 
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/wordGrid" android:layout_width="0dp" android:layout_height="0dp" android:layout_marginTop="@dimen/ls_gap" android:layout_marginBottom="@dimen/ls_gap" android:clipToPadding="false" android:overScrollMode="never" app:layout_constraintBottom_toTopOf="@id/wordListHintRow" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/listProgressText"/>
 
-        <TextView
-            android:id="@+id/wordGridEmpty"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:accessibilityLiveRegion="polite"
-            android:gravity="center"
-            android:text="@string/wl_all_recorded"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/wordGrid"
-            app:layout_constraintEnd_toEndOf="@id/wordGrid"
-            app:layout_constraintStart_toStartOf="@id/wordGrid"
-            app:layout_constraintTop_toTopOf="@id/wordGrid" />
-
         <!-- 底部提示 -->
         <LinearLayout android:id="@+id/wordListHintRow" android:layout_width="0dp" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent">
 

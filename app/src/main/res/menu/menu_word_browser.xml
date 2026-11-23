@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <group android:id="@+id/wordBrowserActions">
-        <item
-            android:id="@+id/action_practice_words"
-            android:title="@string/wl_practice"
-            app:showAsAction="never" />
-        <item
-            android:id="@+id/action_show_unrecorded"
-            android:checkable="true"
-            android:title="@string/wl_show_unrecorded"
-            app:showAsAction="never" />
-    </group>
+    <item
+        android:id="@+id/action_find_word"
+        android:title="@string/word_search_title"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_review_recorded"
+        android:title="@string/word_review_recorded"
+        app:showAsAction="never" />
 </menu>
