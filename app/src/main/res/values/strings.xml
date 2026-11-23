@@ -95,6 +95,9 @@
     <string name="themes_words_count">%1$d characters</string>
     <string name="themes_learned">%1$d/%2$d recorded</string>
     <string name="wl_quiz">Quiz</string>
+    <string name="wl_practice">Practice words</string>
+    <string name="wl_show_unrecorded">Unrecorded only</string>
+    <string name="wl_all_recorded">You’ve recorded every word in this theme.</string>
     <string name="wl_learned">%1$d / %2$d recorded</string>
     <string name="wl_hint">Tap a character to hear it</string>
     <string name="wl_learned_desc">Learning recorded</string>

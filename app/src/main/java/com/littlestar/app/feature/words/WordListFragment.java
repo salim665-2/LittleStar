@@ -28,6 +28,12 @@ import java.util.List;
 public final class WordListFragment extends Fragment {
 
     static final String ARG_THEME_ID = "themeId";
+    private static final String STATE_UNRECORDED = "showUnrecorded";
+
+    private FragmentWordListBinding binding;
+    private WordAdapter adapter;
+    private WordListViewModel.UiState state;
+    private boolean showUnrecorded;
     private boolean launchingQuiz;
 
     public WordListFragment() {
@@ -35,8 +41,14 @@ public final class WordListFragment extends Fragment {
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        showUnrecorded = savedInstanceState != null && savedInstanceState.getBoolean(STATE_UNRECORDED);
+    }
+
+    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        FragmentWordListBinding binding = FragmentWordListBinding.bind(view);
+        binding = FragmentWordListBinding.bind(view);
         ThemesActivity host = (ThemesActivity) requireActivity();
         AppContainer container = host.appContainer();
         WordListViewModel vm = new ViewModelProvider(this,
@@ -44,7 +56,7 @@ public final class WordListFragment extends Fragment {
                 .get(WordListViewModel.class);
 
         String themeId = requireArguments().getString(ARG_THEME_ID);
-        WordAdapter adapter = new WordAdapter();
+        adapter = new WordAdapter();
         adapter.setStateRestorationPolicy(RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
         GridLayoutManager grid = new GridLayoutManager(requireContext(), 1);
         binding.wordGrid.setLayoutManager(grid);
@@ -62,26 +74,81 @@ public final class WordListFragment extends Fragment {
             });
         }
 
-        binding.btnWordListBack.setVisibility(host.isTwoPane() ? View.INVISIBLE : View.VISIBLE);
-        binding.btnWordListBack.setOnClickListener(v -> host.closeWords());
         binding.btnQuiz.setEnabled(false);
-        binding.btnQuiz.setOnClickListener(v -> startThemeQuiz(binding, container, themeId));
+        FragmentWordListBinding viewBinding = binding;
+        binding.btnQuiz.setOnClickListener(v -> startThemeQuiz(viewBinding, container, themeId));
 
-        vm.state().observe(getViewLifecycleOwner(), state -> render(binding, adapter, state));
+        vm.state().observe(getViewLifecycleOwner(), this::render);
         container.content.load(container.executors, () -> vm.init(themeId));
     }
 
-    private void render(FragmentWordListBinding binding, WordAdapter adapter, WordListViewModel.UiState s) {
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(STATE_UNRECORDED, showUnrecorded);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding.wordGrid.setAdapter(null);
+        binding = null;
+        adapter = null;
+        state = null;
+    }
+
+    boolean hasWords() {
+        return state != null && !state.words.isEmpty();
+    }
+
+    boolean hasVisibleWords() {
+        return adapter != null && adapter.getItemCount() > 0;
+    }
+
+    boolean isShowingUnrecorded() {
+        return showUnrecorded;
+    }
+
+    void practiceWords() {
+        adapter.openCards(0);
+    }
+
+    void toggleUnrecorded() {
+        showUnrecorded = !showUnrecorded;
+        renderWords();
+        binding.wordGrid.scrollToPosition(0);
+    }
+
+    private void render(WordListViewModel.UiState s) {
         if (s == null) {
             return;
         }
+        boolean wasReady = hasWords();
+        boolean hadVisibleWords = hasVisibleWords();
+        state = s;
         binding.listTitle.setText(s.theme.nameEn);
         binding.listProgress.setMax(Math.max(1, s.words.size()));
         binding.listProgress.setProgressCompat(s.learned, false);
         binding.listProgressText.setText(
                 getString(R.string.wl_learned, s.learned, s.words.size()));
-        adapter.setItems(s.words);
+        renderWords();
         binding.btnQuiz.setEnabled(!launchingQuiz);
+        if (wasReady != hasWords() || hadVisibleWords != hasVisibleWords()) {
+            requireActivity().invalidateOptionsMenu();
+        }
+    }
+
+    private void renderWords() {
+        List<WordListViewModel.WordItem> visible = new ArrayList<>();
+        for (WordListViewModel.WordItem item : state.words) {
+            if (!showUnrecorded || !item.learned) {
+                visible.add(item);
+            }
+        }
+        adapter.setItems(visible);
+        boolean allRecorded = showUnrecorded && visible.isEmpty();
+        binding.wordGridEmpty.setVisibility(allRecorded ? View.VISIBLE : View.GONE);
+        binding.wordListHintRow.setVisibility(allRecorded ? View.INVISIBLE : View.VISIBLE);
     }
 
     /** Quiz 入口：建 THEME 会话（立即落盘）→ QuizActivity(THEME)。 */
@@ -143,19 +210,19 @@ public final class WordListFragment extends Fragment {
             h.b.wordPinyin.setText(item.word.pinyin);
             h.b.wordEnglish.setText(item.word.english);
             h.b.wordDone.setVisibility(item.learned ? View.VISIBLE : View.GONE);
-            h.b.wordTile.setOnClickListener(v -> {
-                int selected = h.getBindingAdapterPosition();
-                if (selected == RecyclerView.NO_POSITION) {
-                    return;
-                }
-                List<String> ids = new ArrayList<>();
-                for (WordListViewModel.WordItem it : items) {
-                    ids.add(it.word.id);
-                }
-                startActivity(FlashcardActivity.browseIntent(
-                        requireActivity(), ids, selected));
-                Motion.childEnter(requireActivity());
-            });
+            h.b.wordTile.setOnClickListener(v -> openCards(h.getBindingAdapterPosition()));
+        }
+
+        void openCards(int selected) {
+            if (selected < 0 || selected >= items.size()) {
+                return;
+            }
+            List<String> ids = new ArrayList<>();
+            for (WordListViewModel.WordItem item : items) {
+                ids.add(item.word.id);
+            }
+            startActivity(FlashcardActivity.browseIntent(requireActivity(), ids, selected));
+            Motion.childEnter(requireActivity());
         }
 
         @Override

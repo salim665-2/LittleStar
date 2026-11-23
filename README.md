@@ -59,6 +59,10 @@
 
 主题列表和词表分别由 `ThemesFragment` 和 `WordListFragment` 实现。同一个 `ThemesActivity` 通过 `FragmentManager` 管理切换，并在 Activity 重建后恢复所选主题。手机和平板的示例见 [PR #16](https://github.com/Green-hats/LittleStar/pull/16)。
 
+### 词汇浏览工具栏与菜单
+
+进入 **Browse words** 并选一个主题，再打开 **Words** 工具栏右上角的菜单。**Practice words** 从当前词表的第一张卡开始，**Unrecorded only** 隐藏已记录的字，再点一次可恢复完整词表。手机上，工具栏返回箭头会从词表回到主题。双栏布局中，返回箭头回到首页。
+
 ### 可操作学习提醒
 
 1. 授予 LittleStar 系统通知权限。在 **Learning plan** 勾选当天，设置稍后的提醒时间并保存，保留至少一个待学汉字。

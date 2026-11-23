@@ -46,7 +46,7 @@ public class MemberADesignTest {
     }
     @Test public void fourScreensAndAnsweredQuiz_haveVisibleControls() throws Exception {
         try(ActivityScenario<ThemesActivity> s=ActivityScenario.launch(ThemesActivity.class)) {
-            SystemClock.sleep(700); s.onActivity(a->{ assertVisible(a.findViewById(R.id.btnBack)); assertVisible(a.findViewById(R.id.themesList)); });
+            SystemClock.sleep(700); s.onActivity(a->{ assertVisible(a.findViewById(R.id.browserToolbar)); assertVisible(a.findViewById(R.id.themesList)); });
             UiEvidence.capture("A1_checked");
             onView(allOf(withId(R.id.themeNameEn), withText("Animals"))).perform(click());
             SystemClock.sleep(700); s.onActivity(a->{ assertVisible(a.findViewById(R.id.btnQuiz)); assertVisible(a.findViewById(R.id.wordGrid)); });

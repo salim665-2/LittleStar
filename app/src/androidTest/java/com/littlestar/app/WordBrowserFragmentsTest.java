@@ -4,10 +4,12 @@ import android.graphics.Rect;
 import android.view.View;
 
 import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.littlestar.app.data.store.ProgressState;
 import com.littlestar.app.feature.words.ThemesActivity;
 import com.littlestar.app.feature.words.ThemesFragment;
 import com.littlestar.app.feature.words.WordListFragment;
@@ -19,13 +21,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
 import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -77,10 +82,73 @@ public class WordBrowserFragmentsTest {
                         assertNull(activity.getSupportFragmentManager().findFragmentById(R.id.wordsPane)));
                 selectTheme("Fruits");
                 assertWordList("Fruits");
-                onView(withId(R.id.btnWordListBack)).perform(click());
+                onView(withContentDescription(R.string.nav_back)).perform(click());
                 onView(withId(R.id.themesList)).check(matches(isDisplayed()));
             }
         }
+    }
+
+    @Test
+    public void menuFiltersWordsAndPracticesTheVisibleCards() throws Exception {
+        setRecordedAnimalWords(1);
+        try (ActivityScenario<ThemesActivity> scenario = ActivityScenario.launch(ThemesActivity.class)) {
+            onView(withId(R.id.browserToolbar)).check(matches(isDisplayed()));
+            selectTheme("Animals");
+            assertWordList("Animals");
+            assertWordCount(scenario, 6);
+            openWordMenu();
+            onView(withText(R.string.wl_practice)).check(matches(isDisplayed()));
+            UiEvidence.capture("word_browser_options");
+            onView(withText(R.string.wl_show_unrecorded)).perform(click());
+            assertWordCount(scenario, 5);
+
+            scenario.recreate();
+            assertWordList("Animals");
+            assertWordCount(scenario, 5);
+            openWordMenu();
+            onView(withText(R.string.wl_practice)).perform(click());
+            awaitContent();
+            onView(allOf(withId(R.id.pageHanzi), withText("狗"), isDisplayed()))
+                    .check(matches(isDisplayed()));
+            pressBack();
+            assertWordList("Animals");
+
+            setRecordedAnimalWords(6);
+            assertWordCount(scenario, 0);
+            onView(withId(R.id.wordGridEmpty)).check(matches(isDisplayed()));
+            openWordMenu();
+            onView(withText(R.string.wl_show_unrecorded)).perform(click());
+            assertWordCount(scenario, 6);
+        }
+    }
+
+    private static void setRecordedAnimalWords(int count) throws InterruptedException {
+        LittleStarApp app = ApplicationProvider.getApplicationContext();
+        app.container().store.update(state -> {
+            String[] wordIds = {"mao", "gou", "niao", "yu", "ma", "niu"};
+            for (int index = 0; index < wordIds.length; index++) {
+                String wordId = wordIds[index];
+                if (index < count) {
+                    ProgressState.WordProgress wordProgress = new ProgressState.WordProgress();
+                    wordProgress.learnedAt = 1L;
+                    state.words.put(wordId, wordProgress);
+                } else {
+                    state.words.remove(wordId);
+                }
+            }
+        });
+        awaitContent();
+    }
+
+    private static void assertWordCount(ActivityScenario<ThemesActivity> scenario, int count) {
+        scenario.onActivity(activity -> {
+            RecyclerView grid = activity.findViewById(R.id.wordGrid);
+            assertEquals(count, grid.getAdapter().getItemCount());
+        });
+    }
+
+    private static void openWordMenu() {
+        openActionBarOverflowOrOptionsMenu(ApplicationProvider.getApplicationContext());
     }
 
     private static void selectTheme(String name) throws InterruptedException {
