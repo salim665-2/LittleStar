@@ -89,6 +89,7 @@
     <!-- ===== M4 · 字模块 ===== -->
     <string name="themes_top">Words</string>
     <string name="themes_title">Pick a theme</string>
+    <string name="themes_select_hint">Choose a theme to see its characters.</string>
     <string name="themes_subtitle">6 themes · 6 characters each</string>
     <string name="themes_order_hint">Start from 1 — recommended order</string>
     <string name="themes_words_count">%1$d characters</string>
