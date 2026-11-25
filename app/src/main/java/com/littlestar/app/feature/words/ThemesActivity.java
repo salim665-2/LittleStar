@@ -22,7 +22,13 @@ import com.littlestar.app.feature.flashcard.FlashcardActivity;
 
 import java.util.List;
 
-/** Hosts the themes and the selected word list in one window. */
+/**
+ * Hosts the themes and the selected word list in one window using adaptive fragments.
+ * References consulted:
+ * - Android Developers: Fragments & FragmentManager (https://developer.android.com/guide/fragments)
+ * - Android Developers: Support different screen sizes (https://developer.android.com/guide/topics/large-screens/support-different-screen-sizes)
+ * - Android Developers: Add menus with AppBar/Toolbar (https://developer.android.com/develop/ui/views/components/menus)
+ */
 public final class ThemesActivity extends ChildActivity {
 
     private ActivityThemesBinding binding;

@@ -31,6 +31,8 @@ import com.littlestar.app.feature.reward.RewardActivity;
 /**
  * 测验（§7.5）：一页一题，不用 ViewPager。点选项即锁定判定；
  * 答对 mint+勾，答错 clay+墨色× 并亮出正确项。答后反馈条 + NEXT 从下滑入。
+ * Reference consulted: Android Developers — SavedStateHandle for ViewModel
+ * (https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate)
  */
 public final class QuizActivity extends ChildActivity {
 

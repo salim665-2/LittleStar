@@ -32,7 +32,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 词表（§7.3 / §9.3）：6 字网格 + Quiz(THEME) 入口。数据驱动：返回时绿勾自动刷新。 */
+/**
+ * 词表（§7.3 / §9.3）：6 字网格 + Quiz(THEME) 入口。数据驱动：返回时绿勾自动刷新。
+ * References consulted:
+ * - Android Developers: Fragment lifecycle & view state (https://developer.android.com/guide/fragments/lifecycle)
+ * - Android Developers: Get a result from an activity (https://developer.android.com/training/basics/intents/result)
+ * - Android Developers: Handle touch and long-click input (https://developer.android.com/develop/ui/views/touch-and-input/input-events)
+ */
 public final class WordListFragment extends Fragment {
 
     static final String ARG_THEME_ID = "themeId";
