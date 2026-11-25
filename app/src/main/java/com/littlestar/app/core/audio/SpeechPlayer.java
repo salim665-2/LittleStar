@@ -26,6 +26,8 @@ import java.util.Locale;
  * 字音播放：单独的 ExoPlayer 实例播放 asset:///audio/words/xx.ogg。
  * 新请求打断旧的；暴露 isPlaying LiveData。
  * 字音缺失降级：debug 用 TTS 读汉字并 Log.w；release 静默跳过。
+ * Reference consulted: Android Developers — Jetpack Media3 ExoPlayer
+ * (https://developer.android.com/media/media3/exoplayer)
  */
 public final class SpeechPlayer {
 

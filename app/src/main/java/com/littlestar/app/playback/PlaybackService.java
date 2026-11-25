@@ -11,7 +11,11 @@ import androidx.media3.session.MediaSession;
 import androidx.media3.session.MediaSession.ControllerInfo;
 import androidx.media3.session.MediaSessionService;
 
-/** 长音频播放服务：后台播放与系统媒体控制，播放队列由播放器页面设置。 */
+/**
+ * 长音频播放服务：后台播放与系统媒体控制，播放队列由播放器页面设置。
+ * Reference consulted: Android Developers — Background playback with MediaSessionService
+ * (https://developer.android.com/media/media3/session/background-playback)
+ */
 public final class PlaybackService extends MediaSessionService {
 
     private static volatile boolean running;

@@ -30,6 +30,9 @@ import java.util.List;
 /**
  * 识字卡（§7.4）。SESSION：进入时用 SessionBuilder 建会话（REVIEW 会话无新字 → 直接进 Quiz）。
  * BROWSE：词表浏览（M4）。翻页 sfx FLIP + 自动朗读；音频缺失走页面内对话框（§7.26）。
+ * References consulted:
+ * - Android Developers: Save UI states (https://developer.android.com/topic/libraries/architecture/saving-states)
+ * - Material Design 3: Accessibility & touch targets (https://m3.material.io/foundations/accessible-design/overview)
  */
 public final class FlashcardActivity extends ChildActivity {
 

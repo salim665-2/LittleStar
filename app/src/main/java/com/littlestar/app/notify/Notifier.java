@@ -20,6 +20,8 @@ import java.time.ZonedDateTime;
 /**
  * 通知出口（§10.3）。每日学习提醒；媒体通知由 Media3 管理。
  * 文案进 strings.xml；小图标 ic_stat_panda。
+ * Reference consulted: Android Developers — Create a notification & action buttons
+ * (https://developer.android.com/develop/ui/views/notifications/build-notification)
  */
 public final class Notifier {
 

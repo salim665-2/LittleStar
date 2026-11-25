@@ -20,7 +20,11 @@ import com.littlestar.app.databinding.ItemThemeBinding;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 主题选择（§7.2 / §9.2）。 */
+/**
+ * 主题选择（§7.2 / §9.2）。
+ * Reference consulted: Android Developers — Create dynamic lists with RecyclerView
+ * (https://developer.android.com/develop/ui/views/layout/recyclerview)
+ */
 public final class ThemesFragment extends Fragment {
 
     public ThemesFragment() {
