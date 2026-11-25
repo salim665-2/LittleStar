@@ -102,7 +102,7 @@
     <string name="wl_now_playing">Now playing · %1$s</string>
     <string name="wl_audio_unavailable">Theme audio couldn’t play.</string>
     <string name="wl_learned">%1$d / %2$d recorded</string>
-    <string name="wl_hint">Tap to open · Hold to hear</string>
+    <string name="wl_hint">Tap a character to hear it</string>
     <string name="wl_learned_desc">Learning recorded</string>
 
     <!-- ===== M5 · 文化模块 ===== -->
@@ -192,5 +192,9 @@
     <string name="review_correct_desc">Correct answer</string>
     <string name="review_wrong_desc">Wrong answer</string>
     <string name="review_play_desc">Play %1$s</string>
+    <string name="review_prev">Previous</string>
+    <string name="review_next">Next</string>
+    <string name="review_position">%1$d of %2$d</string>
+    <string name="review_select_desc">Show this answer</string>
     <string name="reward_review">Review this round</string>
 </resources>

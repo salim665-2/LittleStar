@@ -2,8 +2,12 @@ package com.littlestar.app.core.ui;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -24,10 +28,16 @@ public final class StepperView extends LinearLayout {
     }
 
     private static final float DISABLED_ALPHA = 0.38f;
+    /** 长按 ＋/－ 后开始连发前的等待时间，以及每次跳变的间隔。 */
+    private static final long REPEAT_START_MS = 400L;
+    private static final long REPEAT_INTERVAL_MS = 120L;
 
     private final BlockLayout minusButton;
     private final BlockLayout plusButton;
     private final TextView valueText;
+    private final Handler repeatHandler = new Handler(Looper.getMainLooper());
+    @Nullable
+    private Runnable repeatRunnable;
 
     private int minValue;
     private int maxValue;
@@ -81,6 +91,17 @@ public final class StepperView extends LinearLayout {
 
         minusButton.setOnClickListener(v -> setValue(value - 1));
         plusButton.setOnClickListener(v -> setValue(value + 1));
+        // 触摸/长按手势：按住不放连续加减，松手立即停止。
+        minusButton.setOnLongClickListener(v -> {
+            startRepeat(-1);
+            return true;
+        });
+        plusButton.setOnLongClickListener(v -> {
+            startRepeat(1);
+            return true;
+        });
+        minusButton.setOnTouchListener(this::onButtonTouch);
+        plusButton.setOnTouchListener(this::onButtonTouch);
 
         refresh();
     }
@@ -124,6 +145,45 @@ public final class StepperView extends LinearLayout {
 
     public void setOnValueChangeListener(@Nullable OnValueChangeListener l) {
         listener = l;
+    }
+
+    /** 按住 ＋/－ 时的连发：先等 REPEAT_START_MS，之后每 REPEAT_INTERVAL_MS 跳一格，到边界自停。 */
+    private void startRepeat(int delta) {
+        stopRepeat();
+        repeatRunnable = new Runnable() {
+            @Override
+            public void run() {
+                int before = value;
+                setValue(before + delta);
+                if (value == before) {
+                    repeatRunnable = null;
+                    return;
+                }
+                repeatHandler.postDelayed(this, REPEAT_INTERVAL_MS);
+            }
+        };
+        repeatHandler.postDelayed(repeatRunnable, REPEAT_START_MS);
+    }
+
+    private void stopRepeat() {
+        if (repeatRunnable != null) {
+            repeatHandler.removeCallbacks(repeatRunnable);
+            repeatRunnable = null;
+        }
+    }
+
+    private boolean onButtonTouch(@NonNull View v, @NonNull MotionEvent event) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            stopRepeat();
+        }
+        return false;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        stopRepeat();
+        super.onDetachedFromWindow();
     }
 
     private void refresh() {

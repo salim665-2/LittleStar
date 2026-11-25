@@ -52,8 +52,8 @@ ReminderScheduler → AlarmManager → ReminderReceiver → Notifier
 | 角色 | Activity | 主要参数或状态 |
 |---|---|---|
 | 共同 | HomeActivity | 首次引导、字/文模式、今日进度 |
-| A | ThemesActivity | 无输入，读取内容主题 |
-| A | WordListActivity | themeId |
+| A | ThemesActivity | 无输入，读取内容主题；托管 ThemesFragment 与 WordListFragment（同屏双栏或单栏切换） |
+| A | WordListFragment（ThemesActivity 内） | themeId；窄屏逐页、≥600dp 与主题列表同屏 |
 | A | FlashcardActivity | mode、wordIds、startIndex、sessionId；每日会话可能在本页创建 |
 | A | QuizActivity | mode、sessionId |
 | B | CultureCategoriesActivity | 无输入，读取三个当前分类 |
@@ -63,7 +63,7 @@ ReminderScheduler → AlarmManager → ReminderReceiver → Notifier
 | C | ParentGateActivity | 按 PIN 是否已设决定创建或验证 |
 | C | SettingsActivity | goal、time、days 草稿及 saving 状态 |
 | C | RewardActivity | sessionId |
-| C | RoundReviewActivity | sessionId；只读回顾 |
+| C | RoundReviewActivity | sessionId；托管 ReviewListFragment / ReviewDetailFragment，只读回顾 |
 
 独立 HelpActivity 已删除，设置菜单使用 menu_settings.xml。
 ComponentGalleryActivity 仅存在于 debug source set，不计入作业正式页面数量。

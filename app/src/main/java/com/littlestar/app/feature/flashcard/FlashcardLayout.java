@@ -66,9 +66,8 @@ final class FlashcardLayout implements ViewTreeObserver.OnGlobalLayoutListener {
     }
 
     private void textSize(TextView view, int maximum, int minimum) {
-        var resources = binding.getRoot().getResources();
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.max(
-                resources.getDimension(minimum), resources.getDimension(maximum) * scale));
+                dimension(minimum), dimension(maximum) * scale));
     }
 
     private void apply() {

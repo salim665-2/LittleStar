@@ -49,6 +49,10 @@ public class ActionableReminderTest {
 
     @Before
     public void prepare() {
+        // 通知权限是设备状态：由用例自己授予，避免依赖其它测试的执行顺序。
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .grantRuntimePermission(app.getPackageName(),
+                        android.Manifest.permission.POST_NOTIFICATIONS);
         container.notifier.ensureChannels();
         assumeTrue("Enable notifications for this test", notifications.areNotificationsEnabled());
         assumeTrue("Enable the daily reminder channel",

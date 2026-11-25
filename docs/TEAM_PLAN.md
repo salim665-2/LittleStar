@@ -15,14 +15,14 @@ LittleStar 帮助生活在英语环境中的 3–6 岁华裔儿童接触中文�
 
 ## 页面责任
 
-| 角色 | 子系统 | 四个 Activity | 负责的结果 |
+| 角色 | 子系统 | 负责的 Activity | 负责的结果 |
 |---|---|---|---|
-| A | 识字学习与测评 | ThemesActivity、WordListActivity、FlashcardActivity、QuizActivity | 选择学习内容、听音识字、记录作答并交给反馈模块 |
+| A | 识字学习与测评 | ThemesActivity、FlashcardActivity、QuizActivity（词表为 ThemesActivity 内的 WordListFragment） | 选择学习内容、听音识字、记录作答并交给反馈模块 |
 | B | 文化内容学习 | CultureCategoriesActivity、CultureListActivity、CultureDetailActivity、PlayerActivity | 内容发现、简介与文本预览、播放及内容与音频的对应 |
 | C | 学习计划与反馈 | ParentGateActivity、SettingsActivity、RewardActivity、RoundReviewActivity | 家长计划与提醒、本轮完成反馈和答题回顾 |
 | 共同 | 首页与整合 | HomeActivity | 今日任务、进度、三个模块入口、首次引导和返回行为 |
 
-正式清单为 13 个 Activity。debug 的 ComponentGalleryActivity 是开发工具，不计入正式清单。
+正式清单为 12 个 Activity（Home 共同维护，A/B/C 各 3–4 个）。回顾页的列表与详情分别是 ReviewListFragment 与 ReviewDetailFragment，由 RoundReviewActivity 管理。debug 的 ComponentGalleryActivity 是开发工具，不计入正式清单。
 帮助、关于、测试通知是 SettingsActivity 的菜单操作，不再占独立 Activity。
 
 ## 每人五个功能用例
@@ -30,7 +30,7 @@ LittleStar 帮助生活在英语环境中的 3–6 岁华裔儿童接触中文�
 | 编号 | 用例 | 页面或交接 |
 |---|---|---|
 | A01 | 选择汉字主题 | ThemesActivity |
-| A02 | 浏览词表并选择汉字 | WordListActivity |
+| A02 | 浏览词表并选择汉字 | ThemesActivity（WordListFragment） |
 | A03 | 查看字形、拼音与英文并播放发音 | FlashcardActivity |
 | A04 | 手动标记已学并继续学习 | FlashcardActivity |
 | A05 | 完成四选一测验并记录答案 | QuizActivity → C 的 RewardActivity |
@@ -43,7 +43,7 @@ LittleStar 帮助生活在英语环境中的 3–6 岁华裔儿童接触中文�
 | C02 | 编辑并保存每日识字目标 | SettingsActivity |
 | C03 | 设置提醒时间与星期，确认通知行为 | SettingsActivity 及提醒服务 |
 | C04 | 查看本轮完成反馈并回到首页 | RewardActivity |
-| C05 | 回顾本轮逐题作答并重听字音 | RoundReviewActivity |
+| C05 | 回顾本轮逐题作答并重听字音 | RoundReviewActivity（ReviewListFragment / ReviewDetailFragment） |
 
 这五个用例是现有产品的最终功能清单，不是 AI 原始回答或已经发生的提问记录。
 

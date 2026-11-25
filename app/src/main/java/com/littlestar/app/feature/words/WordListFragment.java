@@ -2,7 +2,6 @@ package com.littlestar.app.feature.words;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -29,7 +28,6 @@ import com.littlestar.app.databinding.ItemWordTileBinding;
 import com.littlestar.app.feature.quiz.QuizActivity;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /** 词表（§7.3 / §9.3）：6 字网格 + Quiz(THEME) 入口。数据驱动：返回时绿勾自动刷新。 */
@@ -46,9 +44,6 @@ public final class WordListFragment extends Fragment {
     private final SpeechPlayer.SequenceListener themeAudio = new SpeechPlayer.SequenceListener() {
         @Override
         public void onWordChanged(@NonNull String wordId) {
-            if (binding == null) {
-                return;
-            }
             Word word = ((ThemesActivity) requireActivity()).appContainer().content.wordById(wordId);
             if (word != null) {
                 binding.wordListHint.setText(getString(R.string.wl_now_playing, word.hanzi));
@@ -63,36 +58,9 @@ public final class WordListFragment extends Fragment {
         @Override
         public void onFinished(boolean failed) {
             playingTheme = false;
-            if (binding == null) {
-                return;
-            }
             binding.wordListHint.setText(R.string.wl_hint);
             binding.stopThemeAudio.setVisibility(View.GONE);
             requireActivity().invalidateOptionsMenu();
-            if (failed) {
-                Snackbar.make(binding.getRoot(), R.string.wl_audio_unavailable, Snackbar.LENGTH_SHORT).show();
-            }
-        }
-    };
-
-    private final SpeechPlayer.SequenceListener previewAudio = new SpeechPlayer.SequenceListener() {
-        @Override
-        public void onWordChanged(@NonNull String wordId) {
-            if (binding == null) {
-                return;
-            }
-            Word word = ((ThemesActivity) requireActivity()).appContainer().content.wordById(wordId);
-            if (word != null) {
-                binding.wordListHint.setText(getString(R.string.wl_now_playing, word.hanzi));
-            }
-        }
-
-        @Override
-        public void onFinished(boolean failed) {
-            if (binding == null) {
-                return;
-            }
-            binding.wordListHint.setText(R.string.wl_hint);
             if (failed) {
                 Snackbar.make(binding.getRoot(), R.string.wl_audio_unavailable, Snackbar.LENGTH_SHORT).show();
             }
@@ -194,23 +162,9 @@ public final class WordListFragment extends Fragment {
         ((ThemesActivity) requireActivity()).openCards(ids, selected);
     }
 
-    private boolean previewWord(int selected, @NonNull View anchor) {
-        WordListViewModel.UiState state = vm == null ? null : vm.state().getValue();
-        if (state == null || selected < 0 || selected >= state.words.size()) {
-            return false;
-        }
-        Word word = state.words.get(selected).word;
-        anchor.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-        ((ThemesActivity) requireActivity()).appContainer().speech
-                .playSequence(Collections.singletonList(word), previewAudio);
-        return true;
-    }
-
     @Override
     public void onPause() {
-        AppContainer container = ((ThemesActivity) requireActivity()).appContainer();
-        container.speech.stopSequence(themeAudio);
-        container.speech.stopSequence(previewAudio);
+        ((ThemesActivity) requireActivity()).appContainer().speech.stopSequence(themeAudio);
         super.onPause();
     }
 
@@ -289,7 +243,6 @@ public final class WordListFragment extends Fragment {
             h.b.wordEnglish.setText(item.word.english);
             h.b.wordDone.setVisibility(item.learned ? View.VISIBLE : View.GONE);
             h.b.wordTile.setOnClickListener(v -> openCards(h.getBindingAdapterPosition()));
-            h.b.wordTile.setOnLongClickListener(v -> previewWord(h.getBindingAdapterPosition(), v));
         }
 
         @Override

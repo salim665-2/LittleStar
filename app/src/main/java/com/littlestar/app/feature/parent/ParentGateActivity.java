@@ -95,7 +95,7 @@ public final class ParentGateActivity extends ParentActivity {
                 binding.pinField.setError(getString(R.string.peer_settings_pin_mismatch));
                 Motion.shake(binding.answerInput);
             }
-        } else if (input.equals(container().settings.getParentPin())) {
+        } else if (container().settings.verifyParentPin(input)) {
             dispatch();
         } else {
             // 错了：抖动 + 清空，不锁定

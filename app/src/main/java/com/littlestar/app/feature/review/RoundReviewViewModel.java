@@ -3,6 +3,7 @@ package com.littlestar.app.feature.review;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.littlestar.app.AppContainer;
@@ -46,6 +47,7 @@ public final class RoundReviewViewModel extends ViewModel {
 
     private final AppContainer container;
     private final MediatorLiveData<UiState> state = new MediatorLiveData<>();
+    private final MutableLiveData<Integer> selected = new MutableLiveData<>(0);
     private long sessionId = -1;
     private boolean attached;
 
@@ -64,7 +66,19 @@ public final class RoundReviewViewModel extends ViewModel {
             if (ps == null) {
                 return;
             }
-            state.setValue(compute(ps));
+            UiState next = compute(ps);
+            state.setValue(next);
+            int count = next.items.size();
+            Integer current = selected.getValue();
+            int want = current == null ? 0 : current;
+            if (count == 0) {
+                want = 0;
+            } else if (want >= count) {
+                want = count - 1;
+            }
+            if (current == null || current != want) {
+                selected.setValue(want);
+            }
         });
     }
 
@@ -85,6 +99,26 @@ public final class RoundReviewViewModel extends ViewModel {
         }
         int total = session.total > 0 ? session.total : items.size();
         return new UiState(Collections.unmodifiableList(items), session.correct, total);
+    }
+
+    /** 当前查看的答案下标；列表与详情共享，平板上点列表即切换右侧详情。 */
+    @NonNull
+    public LiveData<Integer> selected() {
+        return selected;
+    }
+
+    public void select(int index) {
+        UiState s = state.getValue();
+        int count = s == null ? 0 : s.items.size();
+        if (count == 0) {
+            selected.setValue(0);
+            return;
+        }
+        int clamped = Math.max(0, Math.min(index, count - 1));
+        Integer current = selected.getValue();
+        if (current == null || current != clamped) {
+            selected.setValue(clamped);
+        }
     }
 
     @NonNull

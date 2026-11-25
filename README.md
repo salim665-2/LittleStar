@@ -59,6 +59,12 @@
 
 主题列表和词表分别由 `ThemesFragment` 和 `WordListFragment` 实现。同一个 `ThemesActivity` 通过 `FragmentManager` 管理切换，并在 Activity 重建后恢复所选主题。手机和平板的示例见 [PR #16](https://github.com/Green-hats/LittleStar/pull/16)。
 
+本轮回顾同样由两个 Fragment 组成：`ReviewListFragment` 列出本轮每道题，`ReviewDetailFragment` 显示所选题的汉字、作答与重听。窄屏点题后进入详情、返回回到列表；可用宽度达到 600 dp 时列表与详情并排，点选只切换右侧内容。
+
+### 家长 PIN 与目标步进器
+
+家长 PIN 以 PBKDF2（SHA-256、随机盐）保存，不再存明文；旧版本的四位 PIN 在首次校验成功后自动升级。每日目标的加减按钮支持长按连续调整，到 1 或 10 自动停止。
+
 ### 词汇浏览工具栏与菜单
 
 进入 **Browse words** 并选择主题，再打开 **Words** 工具栏右上角的菜单。

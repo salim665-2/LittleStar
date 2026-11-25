@@ -1,19 +1,34 @@
 package com.littlestar.app.data.prefs;
 
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 /**
  * SharedPreferences 封装：学习任务与应用配置。每个键一个 getter / setter，写入用 apply()。
  */
 public final class SettingsStore {
+
+    private static final String TAG = "SettingsStore";
+    /** 家长密码哈希记录前缀："v1:<迭代次数>:<盐 hex>:<哈希 hex>"。 */
+    private static final String PIN_VERSION_PREFIX = "v1:";
+    private static final int PIN_ITERATIONS = 120_000;
+    private static final int PIN_SALT_BYTES = 16;
+    private static final int PIN_KEY_BITS = 256;
 
     /** 键名集中在这里。 */
     public static final class Keys {
@@ -117,20 +132,106 @@ public final class SettingsStore {
         prefs.edit().putBoolean(Keys.ENGLISH_HINT, show).apply();
     }
 
-    /** 家长密码（D31：PIN 登录取代算术验证，引导时设置）。 */
+    /**
+     * 家长密码（D31：PIN 登录取代算术验证，引导时设置）。
+     * 只保存加盐哈希（PBKDF2-HMAC-SHA256）；旧版本的 4 位明文会在验证成功后自动升级。
+     */
     public boolean isPinSet() {
-        String pin = prefs.getString(Keys.PARENT_PIN, "");
-        return pin != null && pin.length() == 4;
+        return !storedPin().isEmpty();
+    }
+
+    /** 校验输入是否为当前家长密码。 */
+    public boolean verifyParentPin(@NonNull String pin) {
+        String stored = storedPin();
+        if (stored.isEmpty()) {
+            return false;
+        }
+        if (!stored.startsWith(PIN_VERSION_PREFIX)) {
+            byte[] expected = stored.getBytes(StandardCharsets.UTF_8);
+            byte[] actual = pin.getBytes(StandardCharsets.UTF_8);
+            boolean ok = MessageDigest.isEqual(expected, actual);
+            if (ok) {
+                setParentPin(pin);
+            }
+            return ok;
+        }
+        String[] parts = stored.split(":", 4);
+        if (parts.length != 4) {
+            return false;
+        }
+        try {
+            int iterations = Integer.parseInt(parts[1]);
+            byte[] salt = decodeHex(parts[2]);
+            byte[] expected = decodeHex(parts[3]);
+            if (iterations <= 0 || salt.length == 0 || expected.length == 0) {
+                return false;
+            }
+            byte[] actual = pbkdf2(pin, salt, iterations);
+            return MessageDigest.isEqual(expected, actual);
+        } catch (RuntimeException e) {
+            Log.w(TAG, "parent pin record is corrupt", e);
+            return false;
+        }
+    }
+
+    /** 设置新密码；空字符串表示清除。 */
+    public void setParentPin(@NonNull String pin) {
+        if (pin.isEmpty()) {
+            prefs.edit().remove(Keys.PARENT_PIN).apply();
+            return;
+        }
+        byte[] salt = new byte[PIN_SALT_BYTES];
+        new SecureRandom().nextBytes(salt);
+        byte[] hash = pbkdf2(pin, salt, PIN_ITERATIONS);
+        String stored = PIN_VERSION_PREFIX + PIN_ITERATIONS + ":" + encodeHex(salt) + ":"
+                + encodeHex(hash);
+        prefs.edit().putString(Keys.PARENT_PIN, stored).apply();
     }
 
     @NonNull
-    public String getParentPin() {
+    private String storedPin() {
         String pin = prefs.getString(Keys.PARENT_PIN, "");
         return pin == null ? "" : pin;
     }
 
-    public void setParentPin(@NonNull String pin) {
-        prefs.edit().putString(Keys.PARENT_PIN, pin).apply();
+    private static byte[] pbkdf2(@NonNull String pin, @NonNull byte[] salt, int iterations) {
+        PBEKeySpec spec = new PBEKeySpec(pin.toCharArray(), salt, iterations, PIN_KEY_BITS);
+        try {
+            return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                    .generateSecret(spec)
+                    .getEncoded();
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("PBKDF2 unavailable", e);
+        } finally {
+            spec.clearPassword();
+        }
+    }
+
+    @NonNull
+    private static String encodeHex(@NonNull byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
+        }
+        return sb.toString();
+    }
+
+    @NonNull
+    private static byte[] decodeHex(@NonNull String hex) {
+        if (hex.length() % 2 != 0) {
+            throw new IllegalArgumentException("odd hex length");
+        }
+        byte[] out = new byte[hex.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            int hi = Character.digit(hex.charAt(i * 2), 16);
+            int lo = Character.digit(hex.charAt(i * 2 + 1), 16);
+            if (hi < 0 || lo < 0) {
+                throw new IllegalArgumentException("bad hex");
+            }
+            out[i] = (byte) ((hi << 4) | lo);
+        }
+        return out;
     }
 
     /**

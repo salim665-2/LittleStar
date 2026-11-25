@@ -12,6 +12,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -86,10 +87,10 @@ public final class SettingsFlowTest {
             enterPin();
             onView(withId(R.id.questionText))
                     .check(matches(withText(R.string.peer_settings_pin_confirm)));
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
             enterPin();
             waitFor(R.id.settingsTitle);
-            assertEquals("1234", container.settings.getParentPin());
+            assertTrue(container.settings.verifyParentPin("1234"));
             onView(withId(R.id.btnBack)).perform(click());
         }
     }
@@ -102,13 +103,13 @@ public final class SettingsFlowTest {
             onView(withId(R.id.answerInput)).perform(replaceText("9876"));
             closeSoftKeyboard();
             onView(withId(R.id.btnConfirm)).perform(click());
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
             onView(withId(R.id.questionText)).check(matches(withText(R.string.pg_pin_create)));
             enterPin();
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
             enterPin();
             waitFor(R.id.settingsTitle);
-            assertEquals("1234", container.settings.getParentPin());
+            assertTrue(container.settings.verifyParentPin("1234"));
             onView(withId(R.id.btnBack)).perform(click());
         }
     }
@@ -119,7 +120,7 @@ public final class SettingsFlowTest {
         try (ActivityScenario<ParentGateActivity> scenario = ActivityScenario.launch(ParentGateActivity.class)) {
             enterPin();
             onView(withId(R.id.btnBack)).perform(click());
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
         }
     }
 
@@ -130,9 +131,9 @@ public final class SettingsFlowTest {
             enterPin();
             scenario.recreate();
             onView(withId(R.id.questionText)).check(matches(withText(R.string.pg_pin_create)));
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
             enterPin();
-            assertEquals("", container.settings.getParentPin());
+            assertFalse(container.settings.isPinSet());
             enterPin();
             waitFor(R.id.settingsTitle);
             onView(withId(R.id.btnBack)).perform(click());

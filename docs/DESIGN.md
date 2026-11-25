@@ -28,7 +28,7 @@
 |---|---|---|---|
 | 共同 | HomeActivity | 选择今日任务、字或文模块、家长计划 | A、B、C 的入口 |
 | A | ThemesActivity | 查看六个识字主题 | WordList |
-| A | WordListActivity | 浏览所选主题的六个汉字 | Flashcard |
+| A | WordListFragment（ThemesActivity 内） | 浏览所选主题的六个汉字 | Flashcard |
 | A | FlashcardActivity | 浏览字形、听发音、标记已学 | Quiz 或返回浏览 |
 | A | QuizActivity | 四选一作答并展示正确或错误反馈 | Reward |
 | B | CultureCategoriesActivity | 选择儿歌、故事、古诗 | CultureList |
