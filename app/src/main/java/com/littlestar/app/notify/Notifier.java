@@ -9,6 +9,7 @@ import android.content.Intent;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.littlestar.app.R;
 import com.littlestar.app.core.time.AppClock;
@@ -97,6 +98,8 @@ public final class Notifier {
                                                              String text, Intent tapIntent) {
         return new NotificationCompat.Builder(app, CHANNEL_REMINDER)
                 .setSmallIcon(R.drawable.ic_stat_panda)
+                .setColor(ContextCompat.getColor(app, R.color.ls_primary))
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
