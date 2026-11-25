@@ -2,6 +2,17 @@
 
 当前主题策略见 [D45](DECISIONS.md#d45--2026-11-09--只维护浅色模式)：应用固定浅色，系统深色开关不改变应用配色。下文的深色截图与结论是历史记录，不是当前产品要求或新版本验收证据。
 
+## 2026-11-25 个人报告事实复核与全量设备回归
+
+设备：Pixel_7a AVD（Android 17 / API 37）。目的：把个人报告里的每条事实与当天 14:38 队友改动后的代码对齐。
+
+- `testDebugUnitTest`：87/87 通过（UP-TO-DATE，BUILD SUCCESSFUL）。
+- `connectedDebugAndroidTest` 全量：22 个测试类、86 条用例，1 失败、1 跳过。失败仍是 `PeerReviewLearningTest.flashcard_doubleFont_keepsAlignedButtonsAndReadableListen`（断言在第 216 行，属 A 的识字词卡模块，本模块未改其代码）；跳过是既有的 `SettingsFlowTest.save_blockedUnchangedReminderWarns_andKeepsSavedPlan`，与本次改动无关。
+- 静态计数与报告一致：`app/src/main/AndroidManifest.xml` 12 个正式 Activity，`app/src/test` 17 个类 87 个 `@Test`，`app/src/androidTest` 22 个测试类（另 `UiEvidence` 辅助类）86 个 `@Test`。
+- 代码复核：`PlaybackService` 已改为 `MediaSessionService`（`MediaSession` + `MediaController`，前台媒体通知由会话提供）；`ReminderReceiver` 在 `remaining <= 0` 时不发提醒；`ParentGateActivity` 只有首次创建 PIN 的路径，设置页内没有改 PIN 入口；`SongProgressView` 未扩大触摸区，只有拖动/提交分离。
+- 据此修正报告：媒体段改称 MediaSessionService；删除“设置页可改 PIN”“触摸区超出滑块”“A1 有分析面板与云备份”等无法从代码佐证的表述；C01–C05 对齐 `TEAM_PLAN.md` 第 42–46 行的用例定义。
+- 范围：仍未覆盖 API 30 真机与平板模拟器。
+
 ## 2026-11-24 测试稳定性、回顾 Fragment、PIN 哈希与步进器长按
 
 设备：Pixel_7a AVD（Android 17 / API 37）。本轮同时修复了开发机上 Gradle 测试进程无法启动的问题。
