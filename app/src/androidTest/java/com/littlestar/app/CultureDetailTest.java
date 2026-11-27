@@ -56,8 +56,9 @@ public final class CultureDetailTest {
             onView(withId(R.id.detailFocus)).perform(scrollTo()).check(matches(isDisplayed()));
             onView(withId(R.id.detailTranscript)).perform(scrollTo()).check(matches(isDisplayed()));
             scenario.recreate();
-            waitFor(R.id.detailTitle);
+            scrollBackToTitle();
             waitForCover(scenario, true);
+            onView(withId(R.id.detailTitle)).check(matches(isDisplayed()));
             onView(withId(R.id.detailTitle)).check(matches(withText("静夜思")));
             scenario.onActivity(activity -> assertEquals(android.view.View.VISIBLE,
                     activity.findViewById(R.id.detailTranscript).getVisibility()));
@@ -174,6 +175,23 @@ public final class CultureDetailTest {
             } while (true);
             onView(withId(R.id.btnListen)).check(matches(not(isEnabled())));
         }
+    }
+
+    /** Recreate restores the previous scroll offset; a shorter screen can then leave the
+     *  title above the fold, so scroll back up once the new layout exists. */
+    private static void scrollBackToTitle() {
+        long deadline = SystemClock.uptimeMillis() + 10_000;
+        do {
+            try {
+                onView(withId(R.id.detailTitle)).perform(scrollTo());
+                return;
+            } catch (RuntimeException | AssertionError error) {
+                if (SystemClock.uptimeMillis() >= deadline) {
+                    throw error;
+                }
+                SystemClock.sleep(100);
+            }
+        } while (true);
     }
 
     private static void waitFor(int id) {

@@ -2,6 +2,25 @@
 
 当前主题策略见 [D45](DECISIONS.md#d45--2026-11-09--只维护浅色模式)：应用固定浅色，系统深色开关不改变应用配色。下文的深色截图与结论是历史记录，不是当前产品要求或新版本验收证据。
 
+## 2026-11-27 API 30 兼容性回归与字体下限修复
+
+设备：Pixel_2_API30 AVD（Android 11 / API 30 / 1080×1920 / 420 dpi，`system-images;android-30;google_apis;x86_64`）。目的：补上 API 30 的运行证据，并顺手修掉 A 模块里唯一红灯的字体用例。
+
+- 工具链：用 curl 下载 `commandlinetools-win-13114758_latest.zip` 解压到 `D:\Android\Sdk\cmdline-tools\latest`（sdkmanager 19.0），接受许可后安装 API 30 google_apis x86_64 镜像，`avdmanager create avd -n Pixel_2_API30 -d pixel_2`；模拟器以 `-no-window -gpu swiftshader_indirect` 启动。
+- `testDebugUnitTest`：87/87 通过。
+- `connectedDebugAndroidTest` 全量：22 个测试类、86 条用例，**0 失败、1 跳过**（`SettingsFlowTest.save_blockedUnchangedReminderWarns_andKeepsSavedPlan`，依赖模拟器用户无法关闭的通知渠道），API 30 用时 4 分 12 秒，BUILD SUCCESSFUL。
+- 同一份测试在 Pixel_7a（Android 17 / API 37）复跑：22 个测试类、86 条用例，**0 失败、1 跳过**，5 分 02 秒，BUILD SUCCESSFUL——两个 API 级别的结果一致。
+- 首轮在 API 30 上暴露并修复的问题：
+  1. `ActionableReminderTest`、`ReminderDeliveryProbeTest` 无条件调用 `grantRuntimePermission(POST_NOTIFICATIONS)`，API 33 以前该权限不存在，抛 `IllegalArgumentException: Unknown permission`；改为 `SDK_INT >= 33` 才授予。
+  2. `CultureDetailTest.recreation_restoresSelectedContentAndExpandedTranscript` 在 `recreate()` 后等 `detailTitle` 可见；1920 高的屏幕上标题在折叠线以上，改为 `scrollBackToTitle()` 先 `scrollTo` 再断言。
+  3. `SmokeTest` 在识字卡与测验流程里直接点 NEXT，小屏上按钮不足 90% 可见；改为 `perform(scrollTo(), click())`（识字卡 NEXT、测验 NEXT 与选项三处）。
+  4. `ActionableReminderTest.learnNowOpensDailyFlashcardFromExistingHome` 断言通知立即消失；API 30 上系统处理取消有延迟，改为最多轮询 3 秒后仍为 null 才通过。
+  5. 产品代码 `FlashcardLayout.textSize()` 用 `getDimensionPixelSize(56sp)` 得到整数 160 px，而断言用 `getDimension()` 得 160.2 px；2 倍字体下汉字比无障碍下限低 0.2 px 导致 `PeerReviewLearningTest` 红灯。改为新增 `dimensionFloat()` 使用精确 `getDimension()`，Pixel 7a / API 37 与 Pixel 2 / API 30 均通过。
+- 报告同步：§9 改为“两个模拟器均通过、API 30 兼容性修复”；§10 写清与 WenxingZhang、YinuoFang 的协作细节；`Assignment2.docx` 共 1,997 词（上限 2,000）。
+- 截图复核时又发现并修复一处布局缺陷：`RoundReviewActivity` 详情页的汉字用 `@dimen/ls_cover`（56dp，图标尺寸）做宽高，96sp 的字形被裁成小方块；新增 `ls_review_hero = 168dp` 并让 `detailHanzi` 使用它，`includeFontPadding=false`，重新构建后在 Pixel 2 / API 30 上复测正常。
+- 报告改版：按导师反馈把四条 AI 提问改成带约束、指向代码，并把其中一条换成调试类提问（0.2 px 字体下限）；加入三张 API 30 模拟器截图（家长门 + 学习计划、回顾列表 + 详情、提醒通知）与 Google 官方文档参考文献；正文压到 1,774 词。
+- 剩余缺口：无真机、无平板模拟器、无视频素材。
+
 ## 2026-11-25 个人报告事实复核与全量设备回归
 
 设备：Pixel_7a AVD（Android 17 / API 37）。目的：把个人报告里的每条事实与当天 14:38 队友改动后的代码对齐。

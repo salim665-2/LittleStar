@@ -50,9 +50,11 @@ public class ActionableReminderTest {
     @Before
     public void prepare() {
         // 通知权限是设备状态：由用例自己授予，避免依赖其它测试的执行顺序。
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .grantRuntimePermission(app.getPackageName(),
-                        android.Manifest.permission.POST_NOTIFICATIONS);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .grantRuntimePermission(app.getPackageName(),
+                            android.Manifest.permission.POST_NOTIFICATIONS);
+        }
         container.notifier.ensureChannels();
         assumeTrue("Enable notifications for this test", notifications.areNotificationsEnabled());
         assumeTrue("Enable the daily reminder channel",
@@ -120,7 +122,11 @@ public class ActionableReminderTest {
             }
             assertNotNull("Learn now should open the flashcard activity", opened.get());
             assertEquals("SESSION", opened.get().getIntent().getStringExtra("mode"));
-            assertNull(activeReminder());
+            long gone = SystemClock.elapsedRealtime() + 3_000;
+            while (activeReminder() != null && SystemClock.elapsedRealtime() < gone) {
+                SystemClock.sleep(50);
+            }
+            assertNull("The reminder should be gone once the session starts", activeReminder());
             InstrumentationRegistry.getInstrumentation().runOnMainSync(opened.get()::finish);
         }
     }

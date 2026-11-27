@@ -10,7 +10,7 @@ import android.widget.TextView;
 import com.littlestar.app.R;
 import com.littlestar.app.databinding.ActivityFlashcardBinding;
 
-/** 保持纵向词卡，按视口压缩配图和留白，再在可读和触控下限内缩放。 */
+/** 淇濇寔绾靛悜璇嶅崱锛屾寜瑙嗗彛鍘嬬缉閰嶅浘鍜岀暀鐧斤紝鍐嶅湪鍙鍜岃Е鎺т笅闄愬唴缂╂斁銆?*/
 final class FlashcardLayout implements ViewTreeObserver.OnGlobalLayoutListener {
     private final ActivityFlashcardBinding binding;
     private int width;
@@ -65,9 +65,13 @@ final class FlashcardLayout implements ViewTreeObserver.OnGlobalLayoutListener {
         return Math.max(dimension(minimum), Math.round(dimension(id) * scale));
     }
 
+    private float dimensionFloat(int id) {
+        return binding.getRoot().getResources().getDimension(id);
+    }
+
     private void textSize(TextView view, int maximum, int minimum) {
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.max(
-                dimension(minimum), dimension(maximum) * scale));
+                dimensionFloat(minimum), dimensionFloat(maximum) * scale));
     }
 
     private void apply() {

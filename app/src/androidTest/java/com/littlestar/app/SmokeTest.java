@@ -2,6 +2,7 @@ package com.littlestar.app;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -59,7 +60,7 @@ public final class SmokeTest {
             // 3. 识字卡：NEXT 点到 Quiz 出现（REVIEW 会话会直接跳过识字卡）
             for (int i = 0; i < 8 && !isShown(R.id.quizRoot); i++) {
                 waitFor(R.id.flashcardRoot, 10_000);
-                onView(withId(R.id.btnNext)).perform(click());
+                onView(withId(R.id.btnNext)).perform(scrollTo(), click());
                 Thread.sleep(600);
             }
 
@@ -67,9 +68,9 @@ public final class SmokeTest {
             for (int i = 0; i < 12 && !isShown(R.id.rewardRoot); i++) {
                 waitFor(R.id.quizRoot, 10_000);
                 if (isShown(R.id.bottomFeedback)) {
-                    onView(withId(R.id.btnNext)).perform(click());
+                    onView(withId(R.id.btnNext)).perform(scrollTo(), click());
                 } else {
-                    onView(withId(R.id.option0)).perform(click());
+                    onView(withId(R.id.option0)).perform(scrollTo(), click());
                 }
                 Thread.sleep(600);
             }

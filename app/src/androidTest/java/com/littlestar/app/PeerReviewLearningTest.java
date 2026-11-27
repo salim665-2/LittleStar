@@ -213,7 +213,7 @@ public class PeerReviewLearningTest {
      TextView hanzi=a.findViewById(R.id.pageHanzi);
      assertTrue("Illustration must stay above the character",illustration.getBottom()<=hanzi.getTop());
      assertTrue("Bounded viewport should adapt text size",hanzi.getTextSize()<a.getResources().getDimension(R.dimen.ls_flashcard_hanzi_max));
-     assertTrue(hanzi.getTextSize()>=a.getResources().getDimension(R.dimen.ls_flashcard_hanzi_min));
+     assertTrue("Hanzi size " + hanzi.getTextSize() + " must be >= " + a.getResources().getDimension(R.dimen.ls_flashcard_hanzi_min) + " and < " + a.getResources().getDimension(R.dimen.ls_flashcard_hanzi_max) + " (fs=" + a.getResources().getConfiguration().fontScale + ")", hanzi.getTextSize()>=a.getResources().getDimension(R.dimen.ls_flashcard_hanzi_min));
      assertStaticCard(a.findViewById(R.id.pageCard));
      assertNoParentExplanation(a.findViewById(android.R.id.content));
     });

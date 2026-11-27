@@ -15,12 +15,12 @@
 
         <com.littlestar.app.core.ui.HanziTextView
             android:id="@+id/detailHanzi"
-            android:layout_width="@dimen/ls_cover"
-            android:layout_height="@dimen/ls_cover"
+            android:layout_width="@dimen/ls_review_hero"
+            android:layout_height="@dimen/ls_review_hero"
             android:background="@drawable/bg_home_icon"
             android:backgroundTint="@color/ls_surface_container"
             android:gravity="center"
-            android:minHeight="@dimen/ls_cover"
+            android:includeFontPadding="false"
             android:textAppearance="@style/TextAppearance.LS.HanziHero" />
 
         <TextView

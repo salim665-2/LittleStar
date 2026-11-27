@@ -34,9 +34,11 @@ public class ReminderDeliveryProbeTest {
     @Test
     public void scheduleRealReminderForNextMinute() throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .grantRuntimePermission(context.getPackageName(),
-                        Manifest.permission.POST_NOTIFICATIONS);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .grantRuntimePermission(context.getPackageName(),
+                            Manifest.permission.POST_NOTIFICATIONS);
+        }
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         assertEquals(PackageManager.PERMISSION_GRANTED,
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS));

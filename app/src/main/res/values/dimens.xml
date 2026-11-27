@@ -97,6 +97,7 @@
     <dimen name="ls_surface_stroke">1dp</dimen>
     <dimen name="ls_no_stroke">0dp</dimen>
     <dimen name="ls_detail_cover">128dp</dimen>
+    <dimen name="ls_review_hero">168dp</dimen>
     <dimen name="ls_detail_glyph">28sp</dimen>
     <dimen name="ls_play_shortcut">72dp</dimen>
     <dimen name="ls_home_mascot_size">56dp</dimen>
