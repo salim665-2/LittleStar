@@ -1,5 +1,7 @@
 # Assessment 2（Android Project Part 2）对照检查
 
+> 历史记录：本文写于 2026-11-24，此后代码已合入 PR #22（文化浏览器与故事通知）与 PR #23（恢复 WordListActivity），正式页面由 12 个变为 13 个。当前结论以 `docs/ACCEPTANCE.md` 为准。
+
 检查日期：2026-11-24 20:00　｜　截止：2026-11-27（周五）23:59 北京时间，剩约 3 天
 对照文档：`C:\Users\杨国辉\Desktop\安卓\assessment 2\Assignment_2_ITECH3106_AndroidProject2_2026.docx`
 被检查项目：`D:\LittleStar-main`（Java 17 / AGP 9.3.0 / Gradle 9.6.0 / minSdk 30 / target 37）
