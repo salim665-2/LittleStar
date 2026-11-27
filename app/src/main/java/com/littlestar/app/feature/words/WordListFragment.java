@@ -2,6 +2,7 @@ package com.littlestar.app.feature.words;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -28,6 +29,7 @@ import com.littlestar.app.databinding.ItemWordTileBinding;
 import com.littlestar.app.feature.quiz.QuizActivity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,6 +40,14 @@ import java.util.List;
  * - Android Developers: Handle touch and long-click input (https://developer.android.com/develop/ui/views/touch-and-input/input-events)
  */
 public final class WordListFragment extends Fragment {
+
+    /** Host contract so the list can run inside the two-pane browser or a standalone entry. */
+    interface Host {
+        @NonNull
+        AppContainer appContainer();
+
+        void openCards(@NonNull List<String> wordIds, int index);
+    }
 
     static final String ARG_THEME_ID = "themeId";
     private boolean launchingQuiz;
@@ -50,7 +60,10 @@ public final class WordListFragment extends Fragment {
     private final SpeechPlayer.SequenceListener themeAudio = new SpeechPlayer.SequenceListener() {
         @Override
         public void onWordChanged(@NonNull String wordId) {
-            Word word = ((ThemesActivity) requireActivity()).appContainer().content.wordById(wordId);
+            if (binding == null) {
+                return;
+            }
+            Word word = host().appContainer().content.wordById(wordId);
             if (word != null) {
                 binding.wordListHint.setText(getString(R.string.wl_now_playing, word.hanzi));
             }
@@ -64,9 +77,36 @@ public final class WordListFragment extends Fragment {
         @Override
         public void onFinished(boolean failed) {
             playingTheme = false;
+            if (binding == null) {
+                return;
+            }
             binding.wordListHint.setText(R.string.wl_hint);
             binding.stopThemeAudio.setVisibility(View.GONE);
             requireActivity().invalidateOptionsMenu();
+            if (failed) {
+                Snackbar.make(binding.getRoot(), R.string.wl_audio_unavailable, Snackbar.LENGTH_SHORT).show();
+            }
+        }
+    };
+
+    private final SpeechPlayer.SequenceListener previewAudio = new SpeechPlayer.SequenceListener() {
+        @Override
+        public void onWordChanged(@NonNull String wordId) {
+            if (binding == null) {
+                return;
+            }
+            Word word = host().appContainer().content.wordById(wordId);
+            if (word != null) {
+                binding.wordListHint.setText(getString(R.string.wl_now_playing, word.hanzi));
+            }
+        }
+
+        @Override
+        public void onFinished(boolean failed) {
+            if (binding == null) {
+                return;
+            }
+            binding.wordListHint.setText(R.string.wl_hint);
             if (failed) {
                 Snackbar.make(binding.getRoot(), R.string.wl_audio_unavailable, Snackbar.LENGTH_SHORT).show();
             }
@@ -77,11 +117,16 @@ public final class WordListFragment extends Fragment {
         super(R.layout.fragment_word_list);
     }
 
+    @NonNull
+    private Host host() {
+        return (Host) requireActivity();
+    }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         FragmentWordListBinding binding = FragmentWordListBinding.bind(view);
         this.binding = binding;
-        ThemesActivity host = (ThemesActivity) requireActivity();
+        Host host = host();
         AppContainer container = host.appContainer();
         vm = new ViewModelProvider(this,
                 ViewModelFactory.of(() -> new WordListViewModel(container)))
@@ -145,7 +190,7 @@ public final class WordListFragment extends Fragment {
     void playTheme() {
         WordListViewModel.UiState state = vm.state().getValue();
         if (!playingTheme && state != null) {
-            ((ThemesActivity) requireActivity()).appContainer().speech.playSequence(state.theme.words, themeAudio);
+            host().appContainer().speech.playSequence(state.theme.words, themeAudio);
         }
     }
 
@@ -165,12 +210,26 @@ public final class WordListFragment extends Fragment {
         for (WordListViewModel.WordItem item : state.words) {
             ids.add(item.word.id);
         }
-        ((ThemesActivity) requireActivity()).openCards(ids, selected);
+        host().openCards(ids, selected);
+    }
+
+    private boolean previewWord(int selected, @NonNull View anchor) {
+        WordListViewModel.UiState state = vm == null ? null : vm.state().getValue();
+        if (state == null || selected < 0 || selected >= state.words.size()) {
+            return false;
+        }
+        Word word = state.words.get(selected).word;
+        anchor.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        host().appContainer().speech
+                .playSequence(Collections.singletonList(word), previewAudio);
+        return true;
     }
 
     @Override
     public void onPause() {
-        ((ThemesActivity) requireActivity()).appContainer().speech.stopSequence(themeAudio);
+        AppContainer container = host().appContainer();
+        container.speech.stopSequence(themeAudio);
+        container.speech.stopSequence(previewAudio);
         super.onPause();
     }
 
@@ -249,6 +308,7 @@ public final class WordListFragment extends Fragment {
             h.b.wordEnglish.setText(item.word.english);
             h.b.wordDone.setVisibility(item.learned ? View.VISIBLE : View.GONE);
             h.b.wordTile.setOnClickListener(v -> openCards(h.getBindingAdapterPosition()));
+            h.b.wordTile.setOnLongClickListener(v -> previewWord(h.getBindingAdapterPosition(), v));
         }
 
         @Override

@@ -375,22 +375,26 @@
 - 代码审查与单元测试发现 `androidx.core.util.AtomicFile` 内部调用 `File.renameTo`，在 Windows NTFS 已存在同名目标文件且未先行替换时会返回 `false`，导致 `AtomicStateFileTest` 与 `ProgressStoreAsyncTest` 连续写入失败。
 - `AtomicStateFile` 改为先关闭临时流句柄再通过 `java.nio.file.Files.move(..., REPLACE_EXISTING, ATOMIC_MOVE)`（不支持原子移动时回退 `REPLACE_EXISTING`）提交替换，同时兼容旧 `.bak` 恢复与未完成 `.new` 清理，跨 Android API 30+ 与 Windows JVM 单测一致通过。
 
-## D64 · 2026-11-24 · 回顾页拆为列表与详情两个 Fragment
+## D64 · 2026-11-27 · 恢复 WordListActivity 独立入口
+- 为对齐 Assignment 1 的 13-Activity 设计（A 子系统的 Themes / WordList / Flashcard / Quiz 四个页面），恢复 `WordListActivity`：以 `themeId` 直接打开某个主题的词表，作为 `WordListFragment` 的单栏宿主，并提供与双栏浏览一致的工具栏菜单（Start / Continue browsing、Play theme audio）。
+- 词表 UI 与逻辑仍集中在 `WordListFragment`，手机/平板的双栏自适应仍由 `ThemesActivity` 托管；`WordListFragment` 改为面向新的 `WordListFragment.Host`（`appContainer()`、`openCards()`）而不是强转 `ThemesActivity`，两个宿主共用同一实现。
+- 独立入口与 D60 中 `CultureListActivity` 的兼容入口模式一致，新增 `WordListActivityTest` 仪器测试覆盖。
+
+## D65 · 2026-11-24 · 回顾页拆为列表与详情两个 Fragment
 - 依据：Assessment 2 的 Fragment 项要求至少一个 Activity 用 Fragment 支撑动态界面，家长区此前只有时间选择对话框，缺少可展示的 FragmentManager 切换。
-- 做法：RoundReviewActivity 只做宿主。窄屏先显示 ReviewListFragment，点某题后 
-eplace 为 ReviewDetailFragment 并加入返回栈，返回键先回列表；≥600dp 由 layout-w600dp 并排显示列表与详情，点选只更新选中项不换页。两个 Fragment 共用 Activity 作用域的 RoundReviewViewModel，选中下标放在 ViewModel 里，重建后保持。
+- 做法：`RoundReviewActivity` 只做宿主。窄屏先显示 `ReviewListFragment`，点某题后 `replace` 为 `ReviewDetailFragment` 并加入返回栈，返回键先回列表；≥600dp 由 `layout-w600dp` 并排显示列表与详情，点选只更新选中项不换页。两个 Fragment 共用 Activity 作用域的 `RoundReviewViewModel`，选中下标放在 ViewModel 里，重建后保持。
 - 理由：手机上的列表→详情是标准的动态界面证据，平板并排又满足自适应要求；比改造设置页代价小，也不影响已有的提醒设置流程。
-- 验证：ReviewFragmentsTest 在设备上覆盖「点题进详情、上一题/下一题、返回列表」与空回顾状态。
+- 验证：`ReviewFragmentsTest` 在设备上覆盖「点题进详情、上一题/下一题、返回列表」与空回顾状态。
 
-## D65 · 2026-11-24 · 家长 PIN 加盐哈希
-- 问题：parent_pin 以四位明文存在 SharedPreferences，属于安全项明显缺口。
-- 做法：SettingsStore 改用 PBKDF2WithHmacSHA256，120000 次迭代、16 字节随机盐、256 位密钥，保存为 1:<迭代次数>:<盐>:<哈希>；校验用 MessageDigest.isEqual 常量时间比较。旧的四位明文在首次成功校验后自动升级为哈希记录。对外只暴露 isPinSet()、erifyParentPin()、setParentPin()，删除读取明文的接口。
+## D66 · 2026-11-24 · 家长 PIN 加盐哈希
+- 问题：`parent_pin` 以四位明文存在 SharedPreferences，属于安全项明显缺口。
+- 做法：`SettingsStore` 改用 `PBKDF2WithHmacSHA256`，120000 次迭代、16 字节随机盐、256 位密钥，保存为 `v1:<迭代次数>:<盐>:<哈希>`；校验用 `MessageDigest.isEqual` 常量时间比较。旧的四位明文在首次成功校验后自动升级为哈希记录。对外只暴露 `isPinSet()`、`verifyParentPin()`、`setParentPin()`，删除读取明文的接口。
 - 理由：四位 PIN 的取值空间小，哈希不能阻止在线穷举，但能避免明文泄露，并为以后的锁定策略留出字段。明文比对只在迁移路径上出现。
-- 验证：SettingsFlowTest 与家长门相关用例改为调用新接口；设备上重新走一遍创建、验证与修改 PIN。
+- 验证：`SettingsFlowTest` 与家长门相关用例改为调用新接口；设备上重新走一遍创建、验证与修改 PIN。
 
-## D66 · 2026-11-24 · 目标步进器长按连续调整
+## D67 · 2026-11-24 · 目标步进器长按连续调整
 - 依据：每日目标与提醒时间以外的主要输入只有步进按钮，长按连续加减既符合常见控件习惯，也补充单点触摸之外的持续手势交互。
-- 做法：StepperView 的加减按钮长按 400ms 后开始重复，每 120ms 调整一次，到边界自动停止；抬指或取消触摸立即停止，onDetachedFromWindow 清理回调，避免页面退出后继续改值。
+- 做法：`StepperView` 的加减按钮长按 400ms 后开始重复，每 120ms 调整一次，到边界自动停止；抬指或取消触摸立即停止，`onDetachedFromWindow` 清理回调，避免页面退出后继续改值。
 - 理由：长按不改变单击语义，孩子在 1–10 的目标范围内可以快速调整，无需连点十次。
 - 验证：设备上手动长按加减按钮确认连续变化与边界停止；单元测试不受影响。
 

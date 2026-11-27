@@ -29,7 +29,7 @@ import java.util.List;
  * - Android Developers: Support different screen sizes (https://developer.android.com/guide/topics/large-screens/support-different-screen-sizes)
  * - Android Developers: Add menus with AppBar/Toolbar (https://developer.android.com/develop/ui/views/components/menus)
  */
-public final class ThemesActivity extends ChildActivity {
+public final class ThemesActivity extends ChildActivity implements WordListFragment.Host {
 
     private ActivityThemesBinding binding;
     private final OnBackPressedCallback browserBack = new OnBackPressedCallback(true) {
@@ -70,7 +70,9 @@ public final class ThemesActivity extends ChildActivity {
         updatePanes();
     }
 
-    AppContainer appContainer() {
+    @NonNull
+    @Override
+    public AppContainer appContainer() {
         return container();
     }
 
@@ -147,7 +149,8 @@ public final class ThemesActivity extends ChildActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    void openCards(List<String> wordIds, int index) {
+    @Override
+    public void openCards(@NonNull List<String> wordIds, int index) {
         startActivity(FlashcardActivity.browseIntent(this, wordIds, index));
         Motion.childEnter(this);
     }
