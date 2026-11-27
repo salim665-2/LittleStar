@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cultureCategoriesRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/ls_paper">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:maxWidth="@dimen/ls_content_max_width"
+        android:paddingHorizontal="@dimen/ls_margin"
+        android:paddingTop="@dimen/ls_gap"
+        android:paddingBottom="@dimen/ls_margin"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/cul_title"
+            android:accessibilityHeading="true"
+            android:textAppearance="@style/TextAppearance.LS.Display" />
+        <com.littlestar.app.core.ui.BlockLayout
+            android:id="@+id/catSongs"
+            style="@style/Widget.LS.Block.Tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ls_gap">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/ls_module_height"
+                android:padding="@dimen/ls_gap"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:id="@+id/iconSongs"
+                    android:layout_width="@dimen/ls_tile_ill"
+                    android:layout_height="@dimen/ls_tile_ill"
+                    android:importantForAccessibility="no"
+                    android:background="@drawable/bg_home_icon"
+                    android:backgroundTint="@color/ls_secondary_container"
+                    android:padding="@dimen/ls_card_pad"
+                    android:src="@drawable/ic_music"
+                    app:tint="@color/ls_secondary" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="@dimen/ls_gap"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/nameSongsEn"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Title" />
+                    <TextView
+                        android:id="@+id/nameSongs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Body" />
+                    <TextView
+                        android:id="@+id/countSongs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Caption" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="@dimen/ls_icon"
+                    android:layout_height="@dimen/ls_icon"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+        </com.littlestar.app.core.ui.BlockLayout>
+        <com.littlestar.app.core.ui.BlockLayout
+            android:id="@+id/catStories"
+            style="@style/Widget.LS.Block.Tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ls_gap">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/ls_module_height"
+                android:padding="@dimen/ls_gap"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:id="@+id/iconStories"
+                    android:layout_width="@dimen/ls_tile_ill"
+                    android:layout_height="@dimen/ls_tile_ill"
+                    android:importantForAccessibility="no"
+                    android:background="@drawable/bg_home_icon"
+                    android:backgroundTint="@color/ls_tertiary_container"
+                    android:padding="@dimen/ls_card_pad"
+                    android:src="@drawable/ic_book"
+                    app:tint="@color/ls_tertiary" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="@dimen/ls_gap"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/nameStoriesEn"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Title" />
+                    <TextView
+                        android:id="@+id/nameStories"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Body" />
+                    <TextView
+                        android:id="@+id/countStories"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Caption" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="@dimen/ls_icon"
+                    android:layout_height="@dimen/ls_icon"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+        </com.littlestar.app.core.ui.BlockLayout>
+        <com.littlestar.app.core.ui.BlockLayout
+            android:id="@+id/catPoems"
+            style="@style/Widget.LS.Block.Tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ls_gap">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/ls_module_height"
+                android:padding="@dimen/ls_gap"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:id="@+id/iconPoems"
+                    android:layout_width="@dimen/ls_tile_ill"
+                    android:layout_height="@dimen/ls_tile_ill"
+                    android:importantForAccessibility="no"
+                    android:background="@drawable/bg_home_icon"
+                    android:backgroundTint="@color/ls_yellow"
+                    android:padding="@dimen/ls_card_pad"
+                    android:src="@drawable/ic_scroll"
+                    app:tint="@color/ls_on_yellow" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="@dimen/ls_gap"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/namePoemsEn"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Title" />
+                    <TextView
+                        android:id="@+id/namePoems"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Body" />
+                    <TextView
+                        android:id="@+id/countPoems"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.LS.Caption" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="@dimen/ls_icon"
+                    android:layout_height="@dimen/ls_icon"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+        </com.littlestar.app.core.ui.BlockLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

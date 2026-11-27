@@ -355,26 +355,42 @@
 - `progress.json` 的可选字段 `lastBrowsedWords` 按主题 ID 保存最后显示过的浏览词卡，旧存档默认没有浏览位置。每日学习会话与已记录进度独立保存。
 - 主题词表复用 `SpeechPlayer` 播放应用内的字音队列。连播界面随词表生命周期停止，孩子可以留在词表连续听完同一主题。
 
-## D59 · 2026-11-24 · 状态文件自管原子替换
-- 问题：`androidx.core` 的 `AtomicFile.rename` 直接调用 `File.renameTo`，在 Windows 上目标文件已存在时失败且被吞掉，单元测试里第一次之后的保存全部静默失效（`ProgressStoreAsyncTest` 的三条用例与 `legacyAtomicBackup_takesPriorityOverUncommittedMain` 因此失败）。
-- 做法：`AtomicStateFile` 自行写 `progress.json.new`、`getFD().sync()` 后 `Files.move(REPLACE_EXISTING, ATOMIC_MOVE)`；不支持原子移动的文件系统回退到普通 `REPLACE_EXISTING`。读取时先把遗留的 `progress.json.bak` 提升为主文件。`StateFile` 接口与 `.bak` 备份语义不变。
-- 理由：同一份代码必须在 Windows 开发机和 Android 设备上行为一致；吞异常会把数据丢失伪装成成功。写入失败仍记日志并删除临时文件，不产生半截内容。
-- 验证：`testDebugUnitTest` 87 个用例全部通过；旧存档、备份恢复、异步防抖与并发提交均有覆盖。
+## D59 · 2026-11-23 · 词表长按预览字音
+- 在 `WordListFragment` 的字卡上增加长按手势（`setOnLongClickListener` + `HapticFeedbackConstants.LONG_PRESS`），长按单个字块可直接复用 `SpeechPlayer` 试听该字读音并在底部提示栏显示 `Now playing · <字>`，不打开识字卡也不修改学习记录；离开词表时自动停止。
+- 保留识字卡禁用滑动切卡的 D49 决策，在词表层通过长按提供低误触率的触摸手势。
 
-## D60 · 2026-11-24 · 回顾页拆为列表与详情两个 Fragment
+## D60 · 2026-11-25 · 自适应文化浏览与工具栏菜单
+- `CultureCategoriesActivity` 采用 `CultureCategoriesFragment` 与 `CultureListFragment` 组合托管，窄屏单栏动态切换，可用宽度至少 600dp 时并排显示分类与内容列表，重建后沿用已选分类；`CultureListActivity` 保留直接按 `categoryId` 打开 `CultureListFragment` 的兼容入口。
+- 文化浏览与详情页接入 `MaterialToolbar` 及自定义菜单，提供分类连播（`Play category`）与家长共读说明对话框（`Listening tips`）。
+
+## D61 · 2026-11-25 · 文化列表长按快览与播放封面滑动手势
+- `CultureListFragment` 列表行支持长按（`setOnLongClickListener` + `LONG_PRESS` 触觉反馈）弹出 `MaterialAlertDialog` 预览简介与 `Listen for` 识字重点，可直接播放或进入详情，轻点仍进入 `CultureDetailActivity`。
+- `PlayerActivity` 在专辑封面区域（`coverFrame`）接入 `GestureDetector`，支持左右滑动切换同分类相邻曲目、单击切换播放/暂停，并捕获 `onPlayerError` 以对话框提供跳曲或安全返回。
+
+## D62 · 2026-11-25 · 可交互故事时间通知与媒体通知渠道配置
+- `CultureDetailActivity` 菜单新增 `Save to notifications`，通过 `CultureNotifier` 发送带 `BigTextStyle` 的可交互通知（含 `Play now`、`Read together` 展开双语文本与 `Dismiss` 广播关闭三个操作按钮），兼容 Android 13+ 通知权限请求。
+- `PlaybackService` 显式配置 `DefaultMediaNotificationProvider` 与 `ic_stat_panda` 图标及 `sessionActivity`，使后台媒体控制与自定义故事卡片通知互不干扰。
+
+## D63 · 2026-11-25 · 修复 Windows 环境下原子存档替换失败
+- 代码审查与单元测试发现 `androidx.core.util.AtomicFile` 内部调用 `File.renameTo`，在 Windows NTFS 已存在同名目标文件且未先行替换时会返回 `false`，导致 `AtomicStateFileTest` 与 `ProgressStoreAsyncTest` 连续写入失败。
+- `AtomicStateFile` 改为先关闭临时流句柄再通过 `java.nio.file.Files.move(..., REPLACE_EXISTING, ATOMIC_MOVE)`（不支持原子移动时回退 `REPLACE_EXISTING`）提交替换，同时兼容旧 `.bak` 恢复与未完成 `.new` 清理，跨 Android API 30+ 与 Windows JVM 单测一致通过。
+
+## D64 · 2026-11-24 · 回顾页拆为列表与详情两个 Fragment
 - 依据：Assessment 2 的 Fragment 项要求至少一个 Activity 用 Fragment 支撑动态界面，家长区此前只有时间选择对话框，缺少可展示的 FragmentManager 切换。
-- 做法：`RoundReviewActivity` 只做宿主。窄屏先显示 `ReviewListFragment`，点某题后 `replace` 为 `ReviewDetailFragment` 并加入返回栈，返回键先回列表；≥600dp 由 `layout-w600dp` 并排显示列表与详情，点选只更新选中项不换页。两个 Fragment 共用 Activity 作用域的 `RoundReviewViewModel`，选中下标放在 ViewModel 里，重建后保持。
+- 做法：RoundReviewActivity 只做宿主。窄屏先显示 ReviewListFragment，点某题后 
+eplace 为 ReviewDetailFragment 并加入返回栈，返回键先回列表；≥600dp 由 layout-w600dp 并排显示列表与详情，点选只更新选中项不换页。两个 Fragment 共用 Activity 作用域的 RoundReviewViewModel，选中下标放在 ViewModel 里，重建后保持。
 - 理由：手机上的列表→详情是标准的动态界面证据，平板并排又满足自适应要求；比改造设置页代价小，也不影响已有的提醒设置流程。
-- 验证：`ReviewFragmentsTest` 在设备上覆盖「点题进详情、上一题/下一题、返回列表」与空回顾状态。
+- 验证：ReviewFragmentsTest 在设备上覆盖「点题进详情、上一题/下一题、返回列表」与空回顾状态。
 
-## D61 · 2026-11-24 · 家长 PIN 加盐哈希
-- 问题：`parent_pin` 以四位明文存在 SharedPreferences，属于安全项明显缺口。
-- 做法：`SettingsStore` 改用 `PBKDF2WithHmacSHA256`，120000 次迭代、16 字节随机盐、256 位密钥，保存为 `v1:<迭代次数>:<盐>:<哈希>`；校验用 `MessageDigest.isEqual` 常量时间比较。旧的四位明文在首次成功校验后自动升级为哈希记录。对外只暴露 `isPinSet()`、`verifyParentPin()`、`setParentPin()`，删除读取明文的接口。
+## D65 · 2026-11-24 · 家长 PIN 加盐哈希
+- 问题：parent_pin 以四位明文存在 SharedPreferences，属于安全项明显缺口。
+- 做法：SettingsStore 改用 PBKDF2WithHmacSHA256，120000 次迭代、16 字节随机盐、256 位密钥，保存为 1:<迭代次数>:<盐>:<哈希>；校验用 MessageDigest.isEqual 常量时间比较。旧的四位明文在首次成功校验后自动升级为哈希记录。对外只暴露 isPinSet()、erifyParentPin()、setParentPin()，删除读取明文的接口。
 - 理由：四位 PIN 的取值空间小，哈希不能阻止在线穷举，但能避免明文泄露，并为以后的锁定策略留出字段。明文比对只在迁移路径上出现。
-- 验证：`SettingsFlowTest` 与家长门相关用例改为调用新接口；设备上重新走一遍创建、验证与修改 PIN。
+- 验证：SettingsFlowTest 与家长门相关用例改为调用新接口；设备上重新走一遍创建、验证与修改 PIN。
 
-## D62 · 2026-11-24 · 目标步进器长按连续调整
+## D66 · 2026-11-24 · 目标步进器长按连续调整
 - 依据：每日目标与提醒时间以外的主要输入只有步进按钮，长按连续加减既符合常见控件习惯，也补充单点触摸之外的持续手势交互。
-- 做法：`StepperView` 的加减按钮长按 400ms 后开始重复，每 120ms 调整一次，到边界自动停止；抬指或取消触摸立即停止，`onDetachedFromWindow` 清理回调，避免页面退出后继续改值。
+- 做法：StepperView 的加减按钮长按 400ms 后开始重复，每 120ms 调整一次，到边界自动停止；抬指或取消触摸立即停止，onDetachedFromWindow 清理回调，避免页面退出后继续改值。
 - 理由：长按不改变单击语义，孩子在 1–10 的目标范围内可以快速调整，无需连点十次。
 - 验证：设备上手动长按加减按钮确认连续变化与边界停止；单元测试不受影响。
+

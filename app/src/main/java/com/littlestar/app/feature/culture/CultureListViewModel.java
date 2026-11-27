@@ -35,7 +35,7 @@ public final class CultureListViewModel extends ViewModel {
     }
 
     /** 内容就绪后调用一次。 */
-    public void init(@NonNull String categoryId) {
+    public void init(@Nullable String categoryId) {
         if (loaded) {
             return;
         }

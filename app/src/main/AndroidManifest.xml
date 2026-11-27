@@ -43,8 +43,7 @@
             android:exported="false" />
         <activity
             android:name=".feature.culture.CultureCategoriesActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:exported="false" />
         <activity
             android:name=".feature.culture.CultureListActivity"
             android:exported="false"
@@ -74,6 +73,9 @@
             android:exported="false" />
         <receiver
             android:name=".notify.ReminderDismissReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".feature.culture.CultureNotificationReceiver"
             android:exported="false" />
         <receiver
             android:name=".notify.BootReceiver"

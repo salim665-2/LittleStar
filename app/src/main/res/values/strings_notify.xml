@@ -6,4 +6,9 @@
     <string name="notif_reminder_text">Time for Chinese: %1$d characters left today</string>
     <string name="notif_test_title">Test reminder</string>
     <string name="notif_test_text">This is what a LittleStar learning reminder looks like.</string>
+    <string name="notif_channel_culture">Cultural storytime</string>
+    <string name="notif_channel_media">Audio playback</string>
+    <string name="notif_culture_title">Storytime · %1$s (%2$s)</string>
+    <string name="notif_culture_action_play">Play now</string>
+    <string name="notif_culture_action_read">Read together</string>
 </resources>

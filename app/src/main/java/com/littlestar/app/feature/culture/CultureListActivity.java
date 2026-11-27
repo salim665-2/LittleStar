@@ -3,30 +3,34 @@ package com.littlestar.app.feature.culture;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.ViewGroup;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.littlestar.app.AppContainer;
 import com.littlestar.app.R;
-import com.littlestar.app.core.lifecycle.ViewModelFactory;
 import com.littlestar.app.core.ui.ChildActivity;
-import com.littlestar.app.core.ui.ContentImage;
 import com.littlestar.app.core.ui.Insets;
 import com.littlestar.app.core.ui.Motion;
-import com.littlestar.app.data.content.model.CultureItem;
 import com.littlestar.app.databinding.ActivityCultureListBinding;
-import com.littlestar.app.databinding.ItemCultureRowBinding;
 import com.littlestar.app.feature.player.PlayerActivity;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-/** 文化列表：标题进入详情，独立按钮直接播放当前分类队列。 */
-public final class CultureListActivity extends ChildActivity {
+/**
+ * Standalone host Activity for {@link CultureListFragment} when launched directly with a categoryId.
+ * References consulted:
+ * - Android Developers: Fragments & FragmentContainerView (https://developer.android.com/guide/fragments)
+ */
+public final class CultureListActivity extends ChildActivity implements CultureListFragment.Host {
 
     private static final String EXTRA_CATEGORY_ID = "categoryId";
 
@@ -38,8 +42,8 @@ public final class CultureListActivity extends ChildActivity {
     }
 
     private ActivityCultureListBinding binding;
-    private CultureListViewModel vm;
-    private RowAdapter adapter;
+    @Nullable
+    private AlertDialog tipsDialog;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -48,107 +52,110 @@ public final class CultureListActivity extends ChildActivity {
         setContentView(binding.getRoot());
         Insets.applySystemBarPadding(binding.getRoot());
 
-        vm = new ViewModelProvider(this,
-                ViewModelFactory.of(() -> new CultureListViewModel(container())))
-                .get(CultureListViewModel.class);
+        setSupportActionBar(binding.browserToolbar.getRoot());
+        ActionBar toolbar = getSupportActionBar();
+        if (toolbar != null) {
+            toolbar.setTitle(R.string.cul_top);
+            toolbar.setDisplayHomeAsUpEnabled(true);
+            toolbar.setHomeAsUpIndicator(R.drawable.ic_back);
+            toolbar.setHomeActionContentDescription(R.string.nav_back);
+        }
 
-        adapter = new RowAdapter();
-        binding.itemList.setLayoutManager(new LinearLayoutManager(this));
-        binding.itemList.setAdapter(adapter);
-
-        binding.btnBack.setOnClickListener(v -> {
-            finish();
-            Motion.childExit(this);
-        });
-        vm.state().observe(this, this::render);
-        container().content.load(container().executors,
-                () -> vm.init(getIntent().getStringExtra(EXTRA_CATEGORY_ID)));
+        FragmentManager fragments = getSupportFragmentManager();
+        if (fragments.findFragmentById(R.id.cultureListPane) == null) {
+            Bundle args = new Bundle();
+            args.putString(CultureListFragment.ARG_CATEGORY_ID,
+                    getIntent().getStringExtra(EXTRA_CATEGORY_ID));
+            fragments.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .add(R.id.cultureListPane, CultureListFragment.class, args)
+                    .commitNow();
+        }
     }
 
-    private void render(CultureListViewModel.UiState s) {
-        if (s == null) {
-            return;
-        }
-        binding.categoryName.setText(s.category.nameEn);
-        binding.categoryCount.setText(s.category.nameZh);
-        adapter.setItems(s.items);
+    @NonNull
+    @Override
+    public AppContainer appContainer() {
+        return container();
     }
 
-    private void openDetail(int index) {
-        CultureListViewModel.UiState s = vm.state().getValue();
-        if (s == null || index < 0 || index >= s.items.size()) {
-            return;
-        }
-        startActivity(CultureDetailActivity.intent(this, s.items.get(index).id));
+    @Override
+    public void openCultureDetail(@NonNull String itemId) {
+        startActivity(CultureDetailActivity.intent(this, itemId));
         Motion.childEnter(this);
     }
 
-    private void openPlayer(int index) {
-        CultureListViewModel.UiState s = vm.state().getValue();
-        if (s == null || index < 0 || index >= s.items.size()) {
-            return;
-        }
-        List<String> queue = new ArrayList<>();
-        for (CultureItem item : s.items) {
-            queue.add(item.id);
-        }
-        startActivity(PlayerActivity.intent(this, s.items.get(index).id, queue));
+    @Override
+    public void openCulturePlayer(@NonNull String itemId, @NonNull List<String> queue) {
+        startActivity(PlayerActivity.intent(this, itemId, queue));
         Motion.childEnter(this);
     }
 
-    private final class RowAdapter extends RecyclerView.Adapter<RowAdapter.Holder> {
+    @Override
+    public void onCultureListReady() {
+        invalidateOptionsMenu();
+    }
 
-        private List<CultureItem> items = new ArrayList<>();
+    @Override
+    public boolean onSupportNavigateUp() {
+        finish();
+        Motion.childExit(this);
+        return true;
+    }
 
-        void setItems(@NonNull List<CultureItem> newItems) {
-            items = new ArrayList<>(newItems);
-            notifyDataSetChanged();
-        }
+    @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_culture_browser, menu);
+        return true;
+    }
 
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new Holder(ItemCultureRowBinding.inflate(getLayoutInflater(), parent, false));
-        }
+    @Override
+    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
+        CultureListFragment list = currentCultureList();
+        menu.setGroupVisible(R.id.cultureCategoryActions, list != null && list.hasItems());
+        return super.onPrepareOptionsMenu(menu);
+    }
 
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            CultureItem item = items.get(position);
-            h.cover.bind(item.cover);
-            h.b.rowTitle.setText(item.titleZh);
-            h.b.rowTitleEn.setText(item.titleEn);
-            h.b.rowSub.setText(getString(R.string.player_subtitle_fmt, item.subtitleEn,
-                    formatDuration(item.durationSec)));
-            h.b.rowBlock.setContentDescription(getString(R.string.culture_detail_open, item.titleEn));
-            h.b.btnPlay.setContentDescription(getString(R.string.culture_list_play_item, item.titleEn));
-            h.b.rowBlock.setOnClickListener(v -> openDetail(h.getBindingAdapterPosition()));
-            h.b.btnPlay.setOnClickListener(v -> {
-                v.setEnabled(false);
-                v.postDelayed(() -> v.setEnabled(true), 800);
-                openPlayer(h.getBindingAdapterPosition());
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        final class Holder extends RecyclerView.ViewHolder {
-            final ItemCultureRowBinding b;
-            final ContentImage cover;
-
-            Holder(@NonNull ItemCultureRowBinding binding) {
-                super(binding.getRoot());
-                b = binding;
-                cover = new ContentImage(b.rowCover, container().executors);
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_play_category) {
+            CultureListFragment list = currentCultureList();
+            if (list != null && list.hasItems()) {
+                list.playCategory();
+                return true;
             }
+        } else if (item.getItemId() == R.id.action_listening_tips) {
+            if (tipsDialog != null && tipsDialog.isShowing()) {
+                tipsDialog.dismiss();
+            }
+            tipsDialog = new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.culture_tips_title)
+                    .setMessage(R.string.culture_tips_body)
+                    .setPositiveButton(R.string.culture_tips_ok, null)
+                    .show();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
-    /** m:ss 格式化（列表行用）。 */
+    @Nullable
+    private CultureListFragment currentCultureList() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.cultureListPane);
+        return fragment instanceof CultureListFragment list ? list : null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tipsDialog != null) {
+            tipsDialog.dismiss();
+            tipsDialog = null;
+        }
+        super.onDestroy();
+    }
+
+    /** Formats seconds as m:ss for list rows and detail headers. */
     @NonNull
     public static String formatDuration(int seconds) {
-        return seconds / 60 + ":" + String.format(java.util.Locale.ROOT, "%02d", seconds % 60);
+        return seconds / 60 + ":" + String.format(Locale.ROOT, "%02d", seconds % 60);
     }
 }

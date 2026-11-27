@@ -1,23 +1,32 @@
 package com.littlestar.app.feature.player;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.GestureDetector;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
+import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.littlestar.app.R;
 import com.littlestar.app.core.lifecycle.ViewModelFactory;
@@ -28,24 +37,33 @@ import com.littlestar.app.core.ui.Motion;
 import com.littlestar.app.data.content.model.CultureItem;
 import com.littlestar.app.data.content.model.LyricLine;
 import com.littlestar.app.databinding.ActivityPlayerBinding;
-import com.littlestar.app.playback.PlaybackService;
+import com.littlestar.app.feature.culture.CultureNotifier;
 import com.littlestar.app.playback.PlaybackControls;
+import com.littlestar.app.playback.PlaybackService;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * 播放器（§7.9 / §9.9）：MediaController 连 PlaybackService，不在本页持有 ExoPlayer。
- * 进度 250ms 刷新；歌词当前句黄底、后两句 muted。
+ * Cultural audio player: connects to {@link PlaybackService} via {@link MediaController},
+ * synchronizes lyrics at 250ms intervals, supports horizontal swipe gestures on the album cover
+ * to switch tracks, and presents a recovery dialog on playback errors.
+ * References consulted:
+ * - Android Developers: Detect common gestures with GestureDetector
+ *   (https://developer.android.com/develop/ui/views/touch-and-input/gestures/detector)
+ * - Android Developers: Connect a MediaController to a MediaSessionService
+ *   (https://developer.android.com/media/media3/session/control-playback)
  */
 public final class PlayerActivity extends ChildActivity {
 
     private static final String EXTRA_ITEM_ID = "itemId";
     private static final String EXTRA_QUEUE = "queue";
     private static final String EXTRA_PLAY = "play";
+    private static final String EXTRA_FROM_NOTIFICATION = "fromCultureNotif";
     private static final String STATE_PLAYBACK_STARTED = "playback_started";
     private static final long PROGRESS_TICK_MS = 250L;
+    private static final int MIN_SWIPE_DP = 48;
 
     @NonNull
     public static Intent intent(@NonNull Activity from, @NonNull String itemId,
@@ -62,6 +80,16 @@ public final class PlayerActivity extends ChildActivity {
         return intent(from, itemId, queue).putExtra(EXTRA_PLAY, false);
     }
 
+    @NonNull
+    public static Intent notificationIntent(@NonNull Context from, @NonNull String itemId,
+                                            @NonNull List<String> queue) {
+        Intent i = new Intent(from, PlayerActivity.class);
+        i.putExtra(EXTRA_ITEM_ID, itemId);
+        i.putStringArrayListExtra(EXTRA_QUEUE, new ArrayList<>(queue));
+        i.putExtra(EXTRA_FROM_NOTIFICATION, true);
+        return i;
+    }
+
     private ActivityPlayerBinding binding;
     private ContentImage cover;
     private PlayerViewModel vm;
@@ -71,7 +99,10 @@ public final class PlayerActivity extends ChildActivity {
     private MediaController controller;
     @Nullable
     private ListenableFuture<MediaController> controllerFuture;
-    /** 本次进入是否已把播放队列交给控制器（防止 vm/controller 谁先就绪的竞态导致不自动播）。 */
+    @Nullable
+    private AlertDialog errorDialog;
+
+    /** Tracks whether the queue has been handed to the controller during this visit. */
     private boolean playbackStarted;
     private boolean controllerInitialized;
 
@@ -97,6 +128,10 @@ public final class PlayerActivity extends ChildActivity {
         setContentView(binding.getRoot());
         cover = new ContentImage(binding.playerCover, container().executors, binding.coverGlyph);
         Insets.applySystemBarPadding(binding.getRoot());
+
+        if (savedInstanceState == null && getIntent().getBooleanExtra(EXTRA_FROM_NOTIFICATION, false)) {
+            CultureNotifier.cancel(this);
+        }
 
         vm = new ViewModelProvider(this,
                 ViewModelFactory.of(() -> new PlayerViewModel(container())))
@@ -131,6 +166,8 @@ public final class PlayerActivity extends ChildActivity {
                 c.seekTo(pos);
             }
         });
+        setupCoverTouchGestures();
+
         playbackStarted = savedInstanceState != null
                 && savedInstanceState.getBoolean(STATE_PLAYBACK_STARTED);
         vm.state().observe(this, this::render);
@@ -147,6 +184,75 @@ public final class PlayerActivity extends ChildActivity {
                 }
             }
         });
+    }
+
+    @SuppressLint("ClickableViewAccessibility") // Accessible prev/play/next buttons sit directly below coverFrame.
+    private void setupCoverTouchGestures() {
+        float minSwipePx = MIN_SWIPE_DP * getResources().getDisplayMetrics().density;
+        int minFlingVelocity = ViewConfiguration.get(this).getScaledMinimumFlingVelocity();
+        GestureDetector detector = new GestureDetector(this,
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDown(@NonNull MotionEvent e) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
+                        MediaController c = controller;
+                        if (c != null && controllerInitialized && c.getMediaItemCount() > 0) {
+                            PlaybackControls.toggle(c);
+                            syncControllerState();
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onFling(@Nullable MotionEvent e1, @NonNull MotionEvent e2,
+                                           float velocityX, float velocityY) {
+                        if (e1 == null) {
+                            return false;
+                        }
+                        float dx = e2.getX() - e1.getX();
+                        float dy = e2.getY() - e1.getY();
+                        if (Math.abs(dx) > Math.abs(dy)
+                                && Math.abs(dx) >= minSwipePx
+                                && Math.abs(velocityX) >= minFlingVelocity) {
+                            return handleCoverSwipe(dx < 0);
+                        }
+                        return false;
+                    }
+                });
+        binding.coverFrame.setOnTouchListener((v, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN && v.getParent() != null) {
+                v.getParent().requestDisallowInterceptTouchEvent(true);
+            } else if ((event.getActionMasked() == MotionEvent.ACTION_UP
+                    || event.getActionMasked() == MotionEvent.ACTION_CANCEL) && v.getParent() != null) {
+                v.getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return detector.onTouchEvent(event);
+        });
+    }
+
+    public boolean handleCoverSwipe(boolean toNext) {
+        MediaController c = controller;
+        if (c == null || !c.isConnected() || !controllerInitialized) {
+            return false;
+        }
+        if (toNext && c.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                && c.hasNextMediaItem()) {
+            binding.coverFrame.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);
+            c.seekToNextMediaItem();
+            return true;
+        }
+        if (!toNext && c.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                && c.hasPreviousMediaItem()) {
+            binding.coverFrame.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);
+            c.seekToPreviousMediaItem();
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -171,7 +277,7 @@ public final class PlayerActivity extends ChildActivity {
             } catch (java.util.concurrent.ExecutionException
                     | java.util.concurrent.CancellationException e) {
                 updateControls();
-                return;   // 连接失败：本页只读态可用，播放键无效（记 DECISIONS）
+                return;
             }
             controller.addListener(new Player.Listener() {
                 @Override
@@ -179,6 +285,12 @@ public final class PlayerActivity extends ChildActivity {
                     if (controllerInitialized) {
                         syncControllerState();
                     }
+                }
+
+                @Override
+                public void onPlayerError(@NonNull PlaybackException error) {
+                    syncControllerState();
+                    showPlaybackErrorDialog();
                 }
             });
             startPlaybackIfNeeded();
@@ -188,7 +300,33 @@ public final class PlayerActivity extends ChildActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
-    /** 队列为空或与本次意图不同才重置（从后台回来不打断正在播的内容）。 */
+    private void showPlaybackErrorDialog() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (errorDialog != null && errorDialog.isShowing()) {
+            errorDialog.dismiss();
+        }
+        MediaController c = controller;
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.player_error_title)
+                .setMessage(R.string.player_error_body)
+                .setNegativeButton(R.string.player_error_close, (d, w) -> {
+                    finish();
+                    Motion.childExit(this);
+                });
+        if (c != null && c.isConnected() && c.hasNextMediaItem()) {
+            builder.setPositiveButton(R.string.player_error_next, (d, w) -> {
+                if (controller != null && controller.isConnected() && controller.hasNextMediaItem()) {
+                    controller.seekToNextMediaItem();
+                    controller.prepare();
+                }
+            });
+        }
+        errorDialog = builder.show();
+    }
+
+    /** Rebuilds the service queue only when empty or different from the requested queue. */
     private void startPlaybackIfNeeded() {
         MediaController c = controller;
         PlayerViewModel.UiState s = vm.state().getValue();
@@ -251,7 +389,7 @@ public final class PlayerActivity extends ChildActivity {
     private void updateControls() {
         MediaController c = controller;
         boolean ready = c != null && c.isConnected() && controllerInitialized
-                && c.getMediaItemCount() > 0;
+                && c.getMediaItemCount() > 0 && c.getPlayerError() == null;
         binding.btnPlay.setEnabled(ready);
         updateTrackControls();
         binding.progress.setEnabled(ready
@@ -282,7 +420,6 @@ public final class PlayerActivity extends ChildActivity {
             return;
         }
         if (!controllerInitialized) {
-            // vm.init 晚于 controller 连接时补一次自动播放（竞态修复）
             startPlaybackIfNeeded();
             s = vm.state().getValue();
         }
@@ -306,7 +443,7 @@ public final class PlayerActivity extends ChildActivity {
         updateControls();
     }
 
-    /** 歌词：当前句黄底高亮，后两句 muted；无歌词隐藏卡（§9.9）。 */
+    /** Highlights the active lyric line and previews up to two upcoming lines. */
     private void renderLyrics(PlayerViewModel.UiState s) {
         if (s.item.lyrics == null || s.item.lyrics.isEmpty() || s.lyricIndex < 0) {
             binding.lyricsCard.setVisibility(View.GONE);
@@ -360,6 +497,10 @@ public final class PlayerActivity extends ChildActivity {
     @Override
     protected void onStop() {
         handler.removeCallbacks(progressTick);
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+            errorDialog = null;
+        }
         ListenableFuture<MediaController> future = controllerFuture;
         controllerFuture = null;
         controller = null;

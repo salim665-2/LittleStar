@@ -12,4 +12,21 @@
     <string name="culture_list_play">Play</string>
     <string name="culture_list_details">Details →</string>
     <string name="culture_list_play_item">Play %1$s</string>
+    <string name="culture_select_hint">Choose Songs, Stories, or Poems to see items.</string>
+    <string name="culture_list_hint">Tap for details · Hold for quick preview</string>
+    <string name="culture_menu_play_category">Play category</string>
+    <string name="culture_menu_tips">Listening tips</string>
+    <string name="culture_menu_pin_storytime">Save to notifications</string>
+    <string name="culture_tips_title">Listening together</string>
+    <string name="culture_tips_body">Choose a song, story, or poem to explore Chinese aloud.\n\n• Tap any title to open Discover and expand Read together.\n• Hold a row in the list for a quick preview.\n• Swipe left or right on the player cover to switch tracks.\n• Background listening stays optional and never changes your daily character goal.</string>
+    <string name="culture_tips_ok">Got it</string>
+    <string name="culture_preview_play">Play now</string>
+    <string name="culture_preview_discover">Open Discover</string>
+    <string name="culture_preview_close">Close</string>
+    <string name="culture_pin_sent">Saved to notifications for storytime</string>
+    <string name="culture_pin_off">Notifications are off. Allow them in system settings to pin storytime cards.</string>
+    <string name="player_error_title">Audio unavailable</string>
+    <string name="player_error_body">This recording could not be played right now. You can try the next item or go back.</string>
+    <string name="player_error_next">Next item</string>
+    <string name="player_error_close">Back</string>
 </resources>

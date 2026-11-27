@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cultureListRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ls_paper"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:maxWidth="@dimen/ls_content_max_width"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/ls_margin"
+        android:paddingTop="@dimen/ls_gap"
+        android:paddingBottom="@dimen/ls_margin">
+
+        <TextView
+            android:id="@+id/categoryName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:textAppearance="@style/TextAppearance.LS.Display" />
+
+        <TextView
+            android:id="@+id/categoryCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.LS.Caption" />
+
+        <TextView
+            android:id="@+id/cultureListHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ls_gap_sm"
+            android:text="@string/culture_list_hint"
+            android:textAppearance="@style/TextAppearance.LS.Caption" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/itemList"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/ls_gap"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:overScrollMode="never" />
+
+    </LinearLayout>
+</LinearLayout>

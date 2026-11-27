@@ -4,31 +4,24 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.util.AtomicFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * 原子写入：先写 {@code progress.json.new}，fsync 后再移动到 {@code progress.json}。
- *
- * <p>不使用 {@link AtomicFile#finishWrite}，因为它内部用 {@link File#renameTo} 覆盖目标文件；
- * 在 Windows（JVM 单元测试）上目标已存在时 renameTo 会失败，导致除第一次以外的保存全部静默丢失。
- * 这里改用 {@link Files#move} + {@link StandardCopyOption#REPLACE_EXISTING}，
- * 并保留 {@code ATOMIC_MOVE} 以保证 Android/Linux 上的原子替换。</p>
- *
- * <p>读取时先处理旧版 AtomicFile 留下的 {@code .bak}：那是上次提交成功的完整内容，
- * 应当覆盖可能写了一半的主文件。</p>
+ * Atomic JSON state storage backed by NIO {@link Files#move}: writes to a staging {@code .new}
+ * file, flushes the descriptor, closes the stream, and atomically replaces the target file
+ * across both Android (POSIX) and Windows host JVM unit tests.
+ * Reference consulted: Java SE NIO Files.move & StandardCopyOption
+ * (https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Files.html)
  */
 public final class AtomicStateFile implements StateFile {
 
@@ -37,34 +30,29 @@ public final class AtomicStateFile implements StateFile {
     private final File baseFile;
     private final File newFile;
     private final File legacyBackupFile;
-    private final AtomicFile atomicFile;
     private final File backupFile;
 
     public AtomicStateFile(@NonNull File baseFile) {
         this.baseFile = baseFile;
         this.newFile = new File(baseFile.getPath() + ".new");
         this.legacyBackupFile = new File(baseFile.getPath() + ".bak");
-        this.atomicFile = new AtomicFile(baseFile);
         this.backupFile = new File(baseFile.getParentFile(), "progress.bak.json");
     }
 
     @Nullable
     @Override
     public String read() {
-        promoteLegacyBackup();
-        try (InputStream in = atomicFile.openRead();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) != -1) {
-                out.write(buf, 0, n);
+        try {
+            if (legacyBackupFile.exists()) {
+                moveReplacing(legacyBackupFile, baseFile);
             }
-            return out.toString(StandardCharsets.UTF_8.name());
-        } catch (FileNotFoundException e) {
-            if (baseFile.exists()) {
-                Log.e(TAG, "read failed", e);
+            if (newFile.exists()) {
+                Files.deleteIfExists(newFile.toPath());
             }
-            return null;
+            if (!baseFile.exists()) {
+                return null;
+            }
+            return readUtf8(baseFile);
         } catch (IOException e) {
             Log.e(TAG, "read failed", e);
             return null;
@@ -73,24 +61,38 @@ public final class AtomicStateFile implements StateFile {
 
     @Override
     public void write(@NonNull String content) {
-        File parent = newFile.getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs() && !parent.exists()) {
-            Log.e(TAG, "cannot create " + parent);
-            return;
+        File parent = baseFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            Log.e(TAG, "mkdirs failed for " + parent);
         }
+        boolean written = false;
         try (FileOutputStream out = new FileOutputStream(newFile)) {
             out.write(content.getBytes(StandardCharsets.UTF_8));
-            out.getFD().sync();
+            out.flush();
+            try {
+                out.getFD().sync();
+            } catch (IOException ignored) {
+                // Best-effort fsync before closing handle.
+            }
+            written = true;
         } catch (IOException e) {
-            Log.e(TAG, "write failed", e);
-            deleteQuietly(newFile);
+            Log.e(TAG, "write staging failed", e);
+        }
+        if (!written) {
+            try {
+                Files.deleteIfExists(newFile.toPath());
+            } catch (IOException ignored) {
+            }
             return;
         }
         try {
-            replace(newFile, baseFile);
+            moveReplacing(newFile, baseFile);
         } catch (IOException e) {
-            Log.e(TAG, "commit failed, previous content kept", e);
-            deleteQuietly(newFile);
+            Log.e(TAG, "commit move failed", e);
+            try {
+                Files.deleteIfExists(newFile.toPath());
+            } catch (IOException ignored) {
+            }
         }
     }
 
@@ -101,13 +103,12 @@ public final class AtomicStateFile implements StateFile {
         }
         File target = new File(baseFile.getParentFile(), baseFile.getName() + suffix);
         try {
-            replace(baseFile, target);
+            moveReplacing(baseFile, target);
+            Files.deleteIfExists(newFile.toPath());
+            Files.deleteIfExists(legacyBackupFile.toPath());
         } catch (IOException e) {
             Log.e(TAG, "rename to " + target + " failed", e);
-            return;
         }
-        // 此时 base 已移走，delete 只清临时文件
-        atomicFile.delete();
     }
 
     @Nullable
@@ -116,14 +117,8 @@ public final class AtomicStateFile implements StateFile {
         if (!backupFile.exists()) {
             return null;
         }
-        try (InputStream in = new FileInputStream(backupFile);
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) != -1) {
-                out.write(buf, 0, n);
-            }
-            return out.toString(StandardCharsets.UTF_8.name());
+        try {
+            return readUtf8(backupFile);
         } catch (IOException e) {
             Log.e(TAG, "readBackup failed", e);
             return null;
@@ -139,34 +134,26 @@ public final class AtomicStateFile implements StateFile {
         }
     }
 
-    /**
-     * 旧版 AtomicFile 先写主文件、再把主文件改名为 {@code .bak}；
-     * 若进程在写主文件时被杀，主文件是半截内容，而 {@code .bak} 才是上次完整提交的内容。
-     */
-    private void promoteLegacyBackup() {
-        if (!legacyBackupFile.exists()) {
-            return;
-        }
+    private static void moveReplacing(@NonNull File source, @NonNull File target) throws IOException {
         try {
-            replace(legacyBackupFile, baseFile);
-        } catch (IOException e) {
-            Log.e(TAG, "promote legacy backup failed", e);
-        }
-    }
-
-    private static void replace(@NonNull File source, @NonNull File target) throws IOException {
-        Path from = source.toPath();
-        Path to = target.toPath();
-        try {
-            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(source.toPath(), target.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException e) {
-            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
-    private static void deleteQuietly(@NonNull File file) {
-        if (file.exists() && !file.delete()) {
-            Log.e(TAG, "Failed to delete " + file);
+    @NonNull
+    private static String readUtf8(@NonNull File file) throws IOException {
+        try (InputStream in = new FileInputStream(file);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+            return out.toString(StandardCharsets.UTF_8.name());
         }
     }
 }
