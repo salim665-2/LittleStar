@@ -36,14 +36,14 @@
 
 设备：Pixel_7a AVD（Android 17 / API 37）。本轮同时修复了开发机上 Gradle 测试进程无法启动的问题。
 
-- `testDebugUnitTest`：87/87 通过。根因是 `androidx.core` 的 `AtomicFile.rename` 直接调用 `File.renameTo`，在 Windows 上目标已存在时失败并被吞掉，导致第一次之后的保存全部静默失效；改为 `Files.move(REPLACE_EXISTING, ATOMIC_MOVE)` 并保留旧 `.bak` 迁移后用例全部通过（[D59](DECISIONS.md)）。
+- `testDebugUnitTest`：87/87 通过。根因是 `androidx.core` 的 `AtomicFile.rename` 直接调用 `File.renameTo`，在 Windows 上目标已存在时失败并被吞掉，导致第一次之后的保存全部静默失效；改为 `Files.move(REPLACE_EXISTING, ATOMIC_MOVE)` 并保留旧 `.bak` 迁移后用例全部通过（[D63](DECISIONS.md)）。
 - `connectedDebugAndroidTest`：全量 22 个类、86 个用例，1 失败、4 跳过。修复通知权限自授予后，原先跳过的 `ActionableReminderTest` 3 条与 `ReminderDeliveryProbeTest` 1 条实际执行并通过（定向复跑 3/3、1/1），剩余 1 跳过属于既有用例的显式假设。
 - 新增 `ReviewFragmentsTest` 2 条：点行进入详情 Fragment、上一题/下一题、返回回到列表；空回顾显示空状态。
-- 回顾页拆分为 `ReviewListFragment` 与 `ReviewDetailFragment`：窄屏整页替换并保留返回栈，可用宽度 ≥600dp 时列表与详情并排、点选只更新右侧内容（[D60](DECISIONS.md)）。
-- 家长 PIN 改为 PBKDF2WithHmacSHA256（120000 次迭代、16 字节随机盐），旧四位明文在首次校验成功后自动升级，`SettingsFlowTest` 14 条通过（[D61](DECISIONS.md)）。
-- 目标步进器支持长按 400ms 后每 120ms 连续调整，到 1 或 10 自动停止，抬指立即停止（[D62](DECISIONS.md)）。
+- 回顾页拆分为 `ReviewListFragment` 与 `ReviewDetailFragment`：窄屏整页替换并保留返回栈，可用宽度 ≥600dp 时列表与详情并排、点选只更新右侧内容（[D64](DECISIONS.md)）。
+- 家长 PIN 改为 PBKDF2WithHmacSHA256（120000 次迭代、16 字节随机盐），旧四位明文在首次校验成功后自动升级，`SettingsFlowTest` 14 条通过（[D65](DECISIONS.md)）。
+- 目标步进器支持长按 400ms 后每 120ms 连续调整，到 1 或 10 自动停止，抬指立即停止（[D66](DECISIONS.md)）。
 - `assembleDebug`：通过，`app/build/outputs/apk/debug/app-debug.apk` 为 74,064,501 字节。
-- `gradle.properties` 移除 `-Dfile.encoding=UTF-8`：JDK 18+ 默认 UTF-8，该参数会让 Gradle 9.6 在中文用户目录下生成乱码 worker 参数文件，表现为 `ClassNotFoundException: GradleWorkerMain`（与 D59 同批）。
+- `gradle.properties` 移除 `-Dfile.encoding=UTF-8`：JDK 18+ 默认 UTF-8，该参数会让 Gradle 9.6 在中文用户目录下生成乱码 worker 参数文件，表现为 `ClassNotFoundException: GradleWorkerMain`（与 D63 同批）。
 - 已知失败：`PeerReviewLearningTest.flashcard_doubleFont_keepsAlignedButtonsAndReadableListen` 断言汉字字号不低于 `ls_flashcard_hanzi_min`。该用例把视口强制为 360×440dp 并临时把字体缩放到 2 倍，`FlashcardLayout` 的二次测量在该设备上先按旧字号写入 px，判定为设备相关的时序问题，属于 A 的识字词卡模块，本轮未改动其代码，需在 Pixel 10 Pro 上复跑确认。
 - 范围：仍未覆盖 API 30 真机、小屏与全部放大字体配置。
 
