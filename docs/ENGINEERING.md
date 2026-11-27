@@ -53,12 +53,13 @@ ReminderScheduler → AlarmManager → ReminderReceiver → Notifier
 |---|---|---|
 | 共同 | HomeActivity | 首次引导、字/文模式、今日进度 |
 | A | ThemesActivity | 无输入，读取内容主题；托管 ThemesFragment 与 WordListFragment（同屏双栏或单栏切换） |
-| A | WordListFragment（ThemesActivity 内） | themeId；窄屏逐页、≥600dp 与主题列表同屏 |
+| A | WordListActivity | themeId；托管 WordListFragment 的单栏词表，工具栏菜单与双栏浏览一致 |
+| A | WordListFragment（ThemesActivity / WordListActivity 内） | themeId；窄屏逐页、≥600dp 与主题列表同屏 |
 | A | FlashcardActivity | mode、wordIds、startIndex、sessionId；每日会话可能在本页创建 |
 | A | QuizActivity | mode、sessionId |
-| B | CultureCategoriesActivity | 无输入，读取三个当前分类 |
-| B | CultureListActivity | categoryId |
-| B | CultureDetailActivity | itemId；savedInstanceState 保存 previewExpanded |
+| B | CultureCategoriesActivity | 无输入；托管 CultureCategoriesFragment 与 CultureListFragment，窄屏切换、≥600dp 并排 |
+| B | CultureListActivity | categoryId；CultureListFragment 的兼容单栏宿主 |
+| B | CultureDetailActivity | itemId；savedInstanceState 保存 previewExpanded；菜单 Save to notifications 经 CultureNotifier 发故事卡片通知 |
 | B | PlayerActivity | itemId、queue |
 | C | ParentGateActivity | 按 PIN 是否已设决定创建或验证 |
 | C | SettingsActivity | goal、time、days 草稿及 saving 状态 |

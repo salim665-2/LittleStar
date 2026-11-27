@@ -2,6 +2,17 @@
 
 当前主题策略见 [D45](DECISIONS.md#d45--2026-11-09--只维护浅色模式)：应用固定浅色，系统深色开关不改变应用配色。下文的深色截图与结论是历史记录，不是当前产品要求或新版本验收证据。
 
+## 2026-11-27 同步 GitHub main（PR #22 / #23）
+
+目的：把队友推到 GitHub 的最新界面与通知功能合入本地，并核对文档是否需要同步。`git fetch` 在本机被 TLS 拦截（schannel 握手失败、OpenSSL 后端 `unexpected eof`），改用 `codeload.github.com` 下载 main 快照并取逐条 commit patch，用 `git am` 应用 23f2e04（文化浏览器与故事时间通知）与 d95b9d9（恢复 WordListActivity）；两个合并提交 cd43431、4f4650c 无独立内容。
+
+- 新增界面：文化分类/列表改为 `CultureCategoriesFragment` + `CultureListFragment`，窄屏切换、≥600dp 并排（[D60]）；文化列表行长按快览、播放页封面左右滑动切歌与 `onPlayerError` 恢复（[D61]）。
+- 新增通知：`CultureNotifier` 发送带 Play now / Read together / Dismiss 的故事时间通知，`PlaybackService` 配置 `DefaultMediaNotificationProvider` 与 `ic_stat_panda`，两类通知互不干扰（[D62]）。
+- 新增入口：恢复 `WordListActivity` 作为词表独立宿主，`WordListFragment` 改为面向 `Host` 接口，与 `ThemesActivity` 双栏共用实现（[D64]），新增 `WordListActivityTest`。
+- 合并处理：队友独立修了同一处 Windows 原子写问题（[D63]），`AtomicStateFile` 采用其 NIO 版本；`docs/DECISIONS.md` 编号按上游 D59–D64、本地 D65–D67 重排，`ACCEPTANCE.md` 的链接同步改写。
+- 计数：`AndroidManifest.xml` 13 个正式 Activity；`app/src/test` 18 个类 88 个 `@Test`（`testDebugUnitTest` 88/88 通过）；`app/src/androidTest` 25 个文件 91 个 `@Test`，`compileDebugAndroidTestJavaWithJavac` 通过，设备回归待本轮两台模拟器复跑。
+- 文档同步：`README.md` 增加自适应文化浏览与故事提醒一节；`DESIGN.md` 页面清单补 WordListActivity 与文化 Fragment；`ENGINEERING.md` Activity 清单同步；`TEAM_PLAN.md` 正式清单改为 13 个 Activity。
+
 ## 2026-11-27 API 30 兼容性回归与字体下限修复
 
 设备：Pixel_2_API30 AVD（Android 11 / API 30 / 1080×1920 / 420 dpi，`system-images;android-30;google_apis;x86_64`）。目的：补上 API 30 的运行证据，并顺手修掉 A 模块里唯一红灯的字体用例。

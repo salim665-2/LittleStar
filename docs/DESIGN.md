@@ -27,13 +27,14 @@
 | 角色 | Activity | 页面目标 | 下一步 |
 |---|---|---|---|
 | 共同 | HomeActivity | 选择今日任务、字或文模块、家长计划 | A、B、C 的入口 |
-| A | ThemesActivity | 查看六个识字主题 | WordList |
-| A | WordListFragment（ThemesActivity 内） | 浏览所选主题的六个汉字 | Flashcard |
+| A | ThemesActivity | 查看六个识字主题；可用宽度 ≥600dp 时与词表同屏 | WordList |
+| A | WordListActivity | 以 themeId 直接打开单个主题的词表 | Flashcard |
+| A | WordListFragment（ThemesActivity / WordListActivity 内） | 浏览所选主题的六个汉字 | Flashcard |
 | A | FlashcardActivity | 浏览字形、听发音、标记已学 | Quiz 或返回浏览 |
 | A | QuizActivity | 四选一作答并展示正确或错误反馈 | Reward |
-| B | CultureCategoriesActivity | 选择儿歌、故事、古诗 | CultureList |
-| B | CultureListActivity | 标题查看详情，独立 PLAY 直接收听 | CultureDetail 或 Player |
-| B | CultureDetailActivity | 看简短介绍，按需展开共读与学习重点 | Player |
+| B | CultureCategoriesActivity | 选择儿歌、故事、古诗；托管分类与列表两个 Fragment | CultureList |
+| B | CultureListActivity | 标题查看详情，独立 PLAY 直接收听；CultureListFragment 的单栏宿主 | CultureDetail 或 Player |
+| B | CultureDetailActivity | 看简短介绍，按需展开共读与学习重点；菜单可发送故事时间通知 | Player |
 | B | PlayerActivity | 播放、暂停、上一首、下一首及拖动进度 | 返回来源详情／列表或后台收听 |
 | C | ParentGateActivity | 首次创建或验证四位数字 PIN | Settings |
 | C | SettingsActivity | 配置目标、提醒，使用帮助菜单 | 返回 Home |
@@ -95,7 +96,8 @@ Player 返回打开它的详情或列表；列表直接播放仍传递当前分�
 
 ### 分类与列表
 
-提供儿歌、故事、古诗三个当前分类。列表展示内容标题、类型和时长。
+提供儿歌、故事、古诗三个当前分类。列表展示内容标题、类型和时长，行内长按可快览简介与学习重点。
+分类与列表分别由 `CultureCategoriesFragment` 和 `CultureListFragment` 实现，由 `CultureCategoriesActivity` 托管：可用宽度小于 600dp 时先选分类再进列表，返回回到分类；≥600dp 时两栏同屏。`CultureListActivity` 保留按 categoryId 直接打开列表的入口。
 行和右侧箭头均进入详情；箭头不再暗示点击后立即播放。
 
 ### 文化详情
@@ -110,6 +112,7 @@ Player 返回打开它的详情或列表；列表直接播放仍传递当前分�
 - 底部主操作 LISTEN：进入播放器，并携带所选条目和同分类播放队列。
 - 页面重建保留所选条目和文本展开状态；无效条目显示说明并禁用播放。
 - 详情不自动启动音频，也不新增收藏、下载或网络依赖。
+- 菜单提供 **Save to notifications**：经 `CultureNotifier` 发送带 Play now、Read together 与 Dismiss 的故事时间通知，Android 13+ 需通知权限。
 
 ### 播放器
 

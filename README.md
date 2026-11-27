@@ -57,9 +57,15 @@
 
 从首页进入 **Browse words**，再选择一个主题。可用宽度小于 600 dp 时先显示主题列表，选中后切到词表，返回可回到主题列表。可用宽度达到 600 dp 时，主题和词表同屏，点击左侧主题会更新右侧词表。
 
-主题列表和词表分别由 `ThemesFragment` 和 `WordListFragment` 实现。同一个 `ThemesActivity` 通过 `FragmentManager` 管理切换，并在 Activity 重建后恢复所选主题。手机和平板的示例见 [PR #16](https://github.com/Green-hats/LittleStar/pull/16)。
+主题列表和词表分别由 `ThemesFragment` 和 `WordListFragment` 实现。同一个 `ThemesActivity` 通过 `FragmentManager` 管理切换，并在 Activity 重建后恢复所选主题。需要直接打开某个主题时，`WordListActivity` 托管同一个 `WordListFragment`，工具栏菜单与双栏浏览一致。手机和平板的示例见 [PR #16](https://github.com/Green-hats/LittleStar/pull/16)。
 
 本轮回顾同样由两个 Fragment 组成：`ReviewListFragment` 列出本轮每道题，`ReviewDetailFragment` 显示所选题的汉字、作答与重听。窄屏点题后进入详情、返回回到列表；可用宽度达到 600 dp 时列表与详情并排，点选只切换右侧内容。
+
+### 自适应文化浏览与故事提醒
+
+从首页进入 **Listen & read**：可用宽度小于 600 dp 时先选分类再进列表，返回回到分类；达到 600 dp 时分类与列表同屏。分类和列表分别由 `CultureCategoriesFragment` 与 `CultureListFragment` 实现，由 `CultureCategoriesActivity` 托管；`CultureListActivity` 保留按 `categoryId` 直接打开列表的入口，列表行支持长按快览简介与学习重点。
+
+文化详情菜单新增 **Save to notifications**，通过 `CultureNotifier` 发出带 **Play now**、**Read together** 与 **Dismiss** 的故事时间通知；播放页封面支持左右滑动切歌、单击暂停，播放出错时给出跳曲或返回提示。
 
 ### 家长 PIN 与目标步进器
 
