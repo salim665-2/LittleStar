@@ -12,6 +12,7 @@
 - 合并处理：队友独立修了同一处 Windows 原子写问题（[D63]），`AtomicStateFile` 采用其 NIO 版本；`docs/DECISIONS.md` 编号按上游 D59–D64、本地 D65–D67 重排，`ACCEPTANCE.md` 的链接同步改写。
 - 计数：`AndroidManifest.xml` 13 个正式 Activity；`app/src/test` 18 个类 88 个 `@Test`（`testDebugUnitTest` 88/88 通过）；`app/src/androidTest` 25 个文件 91 个 `@Test`，`compileDebugAndroidTestJavaWithJavac` 通过。
 - 设备回归（Pixel_2_API30）：首轮 92 条用例里 1 失败——`CultureBrowserFragmentsTest.storytimeNotificationProvidesPlayReadAndDismissActions` 在 `detailTranscript` 上直接断言可见，1080×1920 屏幕上正文在折叠线以下；改为先 `scrollTo` 再断言后，该类 4/4 通过，全量复跑 **0 失败、1 跳过**，4 分 55 秒，BUILD SUCCESSFUL。
+- 同一份测试在 Pixel_7a（Android 17 / API 37）复跑：92 条用例 **0 失败、1 跳过**，BUILD SUCCESSFUL——合入后的代码在两个 API 级别都通过。
 - 报告同步：`Assignment2.docx` §9 的计数改为 88 个 JVM 用例、25 个设备测试类（91 条用例），词数 1,774 不变。
 - 文档同步：`README.md` 增加自适应文化浏览与故事提醒一节；`DESIGN.md` 页面清单补 WordListActivity 与文化 Fragment；`ENGINEERING.md` Activity 清单同步；`TEAM_PLAN.md` 正式清单改为 13 个 Activity。
 
