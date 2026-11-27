@@ -46,6 +46,7 @@ import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.longClick;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.action.ViewActions.swipeLeft;
 import static androidx.test.espresso.action.ViewActions.swipeRight;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -220,7 +221,9 @@ public final class CultureBrowserFragmentsTest {
         try (ActivityScenario<CultureDetailActivity> scenario = ActivityScenario.launch(
                 CultureDetailActivity.notificationIntent(context, poem.id, true))) {
             awaitContent();
-            onView(withId(R.id.detailTranscript)).check(matches(isDisplayed()));
+            onView(withId(R.id.detailTranscript))
+                    .perform(scrollTo())
+                    .check(matches(isDisplayed()));
         }
     }
 
